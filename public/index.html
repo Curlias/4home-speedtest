@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4HOME Speed Test</title>
+<link rel="icon" href="/logo.svg">
+<style>
+  :root {
+    --flux-from:#0a6f8a; --flux-mid:#1aa3c4; --flux-to:#74e1ff;
+    --flux:linear-gradient(90deg, var(--flux-from) 0%, var(--flux-mid) 35%, var(--flux-to) 55%, var(--flux-mid) 78%, var(--flux-from) 100%);
+    --down:#74e1ff; --up:#a78bfa; --lat:#f5a524;
+    --txt:#f2f4f7; --mut:#9aa3ae; --line:rgba(255,255,255,.09); --card:#0d1013; --card-top:#15191d;
+    --ok:#3fb950; --warn:#f5a524; --bad:#f85149; --r:6px; --ease:cubic-bezier(.22,1,.36,1);
+  }
+  * { box-sizing:border-box; }
+  html { background:#000; }
+  body { margin:0; font:15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:var(--txt); }
+
+  /* Background: port of DarkGradientBg (elegant-dark-pattern) */
+  .bg { position:fixed; inset:0; z-index:-1; overflow:hidden; background:#000; }
+  .bg-grad { position:absolute; inset:0; background:radial-gradient(100% 100% at 0% 0%, rgb(46,46,46) 0%, rgb(0,0,0) 100%);
+    -webkit-mask:radial-gradient(125% 100% at 0% 0%, #000 0%, rgba(0,0,0,.224) 88.28%, transparent 100%);
+            mask:radial-gradient(125% 100% at 0% 0%, #000 0%, rgba(0,0,0,.224) 88.28%, transparent 100%); }
+  .streak { position:absolute; inset:0; opacity:.2; transform:skewX(45deg); background:linear-gradient(rgb(0,207,255) 0%, rgba(0,207,255,0) 100%); -webkit-mask:var(--m); mask:var(--m); }
+  .s1 { --m:linear-gradient(90deg, transparent 0%, #000 20%, transparent 36%, #000 55%, rgba(0,0,0,.13) 67%, #000 78%, transparent 97%); }
+  .s2 { --m:linear-gradient(90deg, transparent 11%, #000 25%, rgba(0,0,0,.55) 41%, rgba(0,0,0,.13) 67%, #000 78%, transparent 97%); }
+  .s3 { --m:linear-gradient(90deg, transparent 9%, #000 20%, rgba(0,0,0,.55) 28%, rgba(0,0,0,.424) 40%, #000 48%, rgba(0,0,0,.267) 54%, rgba(0,0,0,.13) 78%, #000 88%, transparent 97%); }
+  .s4 { --m:linear-gradient(90deg, transparent 0%, #000 17%, rgba(0,0,0,.55) 26%, #000 35%, transparent 47%, rgba(0,0,0,.13) 69%, #000 79%, transparent 97%); }
+  .s5 { --m:linear-gradient(90deg, transparent 0%, #000 20%, rgba(0,0,0,.55) 27%, #000 42%, transparent 48%, rgba(0,0,0,.13) 67%, #000 74%, #000 82%, rgba(0,0,0,.47) 88%, transparent 97%); }
+  .noise { position:absolute; inset:0; opacity:.05; background-size:150px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .dots { position:absolute; inset:0; opacity:.2; background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.5) 1px, transparent 0); background-size:20px 20px; }
+
+  header { max-width:1240px; margin:auto; padding:22px 16px 16px; display:flex; align-items:center; gap:14px; border-bottom:1px solid var(--line); }
+  header img { height:26px; } header b { font-size:22px; } header .sp { flex:1; } header .hs { color:var(--mut); font-size:14px; }
+  main { max-width:1240px; margin:auto; padding:24px 16px 80px; }
+  section { min-width:0; }
+  h2 { font-size:19px; margin:0 0 14px; font-weight:700; }
+  h3 { font-size:13px; margin:0; font-weight:500; color:var(--mut); }
+  .i { color:var(--mut); font-size:11px; cursor:help; border:1px solid var(--mut); border-radius:50%; width:15px; height:15px; display:inline-grid; place-items:center; margin-left:5px; vertical-align:1px; text-transform:none; }
+  .card { background:var(--card); border:1px solid #1e2429; border-top-color:#2a3238; border-radius:var(--r); padding:18px 20px; }
+  .block { margin-bottom:36px; }
+  .hero { padding:28px 0 26px; max-width:760px; }
+  .kicker { margin:0 0 8px; color:var(--down); font-size:13px; font-weight:600; }
+  .hero h1 { margin:0; font-size:clamp(28px, 4vw, 44px); line-height:1.1; letter-spacing:-.8px; font-weight:700; text-wrap:balance; }
+  .lead { margin:12px 0 0; color:var(--mut); font-size:16px; max-width:620px; }
+
+  /* Progressive flux loader (vanilla port) */
+  .run { display:flex; gap:28px; align-items:center; margin-bottom:28px; padding:22px 26px; }
+  .flux { flex:1; min-width:0; }
+  .flux-label { position:relative; height:52px; perspective:1000px; margin-bottom:14px; user-select:none; overflow:hidden; }
+  .fl { position:absolute; inset:0; display:flex; align-items:center; font-size:34px; font-weight:600; letter-spacing:-.6px; color:#cfd8e3; transform-style:preserve-3d; transform-origin:left center; animation:flux-in .9s var(--ease) .25s both; white-space:nowrap; }
+  .fl span { display:inline-block; animation:flux-letter .45s var(--ease) both; }
+  .fl.out { animation:flux-out .45s cubic-bezier(.7,0,.84,0) both; }
+  @keyframes flux-in { 0% { opacity:0; transform:translateZ(-380px) scale(.65); filter:blur(14px); } 45% { opacity:1; transform:translateZ(60px) scale(1.08); filter:blur(0); } 75% { transform:translateZ(-8px) scale(.985); } 100% { opacity:1; transform:none; filter:blur(0); } }
+  @keyframes flux-letter { from { opacity:0; transform:translateY(12px); filter:blur(8px); } to { opacity:1; transform:none; filter:blur(0); } }
+  @keyframes flux-out { to { opacity:0; transform:translateZ(220px) scale(1.35); filter:blur(10px); } }
+  .flux-track { position:relative; height:20px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.06); box-shadow:inset 0 2px 3px rgba(0,0,0,.45), inset 0 -1px 2px rgba(255,255,255,.05); }
+  .flux-fill { position:absolute; inset:0; border-radius:999px; background:var(--flux); box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5), inset 0 -2px 3px rgba(0,50,70,.35); clip-path:inset(0 100% 0 0 round 999px); transition:clip-path .55s var(--ease); }
+  .flux-glow { }
+  .flux-sheen { position:absolute; inset:0 auto 0 0; width:50%; background:linear-gradient(90deg, transparent 0%, rgba(255,255,255,.55) 50%, transparent 100%); mix-blend-mode:screen; animation:sheen 1.6s linear infinite; }
+  @keyframes sheen { from { transform:translateX(-110%); } to { transform:translateX(210%); } }
+  .flux-meta { display:flex; justify-content:space-between; gap:12px; margin-top:10px; color:var(--mut); font-size:14px; }
+  #flux-pct { font-variant-numeric:tabular-nums; color:var(--txt); font-weight:600; }
+  .run-btns { display:flex; flex-direction:column; gap:10px; min-width:170px; }
+
+  button { font:inherit; font-weight:600; color:var(--txt); background:#12161a; border:1px solid #262d33; border-radius:6px; padding:9px 18px; cursor:pointer; transition:background .15s, border-color .15s, transform .15s; }
+  button:hover:not(:disabled) { background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.2); }
+  button:active:not(:disabled) { transform:scale(.97); }
+  button:disabled { opacity:.4; cursor:default; }
+  button.pri { white-space:nowrap; background:var(--flux); color:#fff; border:0; padding:13px 28px; font-size:16px;  text-shadow:0 1px 2px rgba(0,50,70,.5); }
+  button.pri:hover:not(:disabled) { background:var(--flux); filter:brightness(1.12); }
+  button svg { width:16px; height:16px; vertical-align:-3px; margin-right:6px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+  .top { display:grid; grid-template-columns:1fr 380px; gap:24px; align-items:stretch; margin-bottom:24px; }
+  .speed, .side { display:flex; flex-direction:column; }
+  .dl-ul { display:grid; grid-template-columns:1fr 1fr; gap:16px; flex:1; }
+  .num { font-size:clamp(40px, 4.4vw, 58px); font-weight:700; line-height:1.1; font-variant-numeric:tabular-nums; letter-spacing:-1px; margin-top:4px; }
+  .num small, .mid small { font-size:18px; font-weight:600; letter-spacing:0; margin-left:4px; color:var(--mut); }
+  .dl-ul > .card { display:flex; flex-direction:column; }
+  .chart { margin-top:10px; flex:1; min-height:170px; display:grid; }
+  .ph { place-self:center; color:var(--mut); font-size:13px; border:1px dashed var(--line); border-radius:4px; width:100%; height:100%; display:grid; place-items:center; }
+  .metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:16px; }
+  .mid { font-size:32px; font-weight:700; font-variant-numeric:tabular-nums; margin:2px 0; }
+  .ud { display:flex; gap:16px; font-size:14px; font-variant-numeric:tabular-nums; } .ud b { color:var(--mut); font-weight:400; }
+  .sub { color:var(--mut); font-size:13px; }
+  .conn { flex:1; display:flex; flex-direction:column; }
+  .conn table { width:100%; border-collapse:collapse; font-size:14px; } .conn td { padding:6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .conn tr:last-child td { border:0; } .conn td:first-child { color:var(--mut); width:42%; padding-right:8px; }
+  a { color:var(--down); text-decoration:none; } a:hover { text-decoration:underline; }
+  input { font:inherit; background:rgba(255,255,255,.05); border:1px solid var(--line); color:var(--txt); border-radius:8px; padding:6px 10px; width:100%; }
+  .gauge { max-width:240px; width:100%; margin:0 auto 8px; }
+  .gauge text { font-variant-numeric:tabular-nums; }
+
+  .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:36px; }
+  .when { margin-left:auto; color:var(--mut); font-size:14px; }
+
+  .q { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .q .card { display:flex; gap:16px; align-items:center; }
+  .q svg { width:42px; height:42px; stroke:var(--txt); fill:none; stroke-width:1.6; flex:none; }
+  .q h4 { margin:0; font-size:16px; }
+  .stars { color:#343a42; font-size:20px; letter-spacing:2px; line-height:1.2; } .stars b { color:var(--lat); font-weight:400; }
+
+  .cols { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; align-items:start; }
+  .m { margin-bottom:12px; padding:14px 16px; }
+  .mh { font-weight:600; margin-bottom:4px; } .mh span { color:var(--mut); font-weight:400; }
+  .m summary { cursor:pointer; list-style:none; display:flex; justify-content:space-between; color:var(--mut); font-size:13px; font-variant-numeric:tabular-nums; }
+  .m summary::-webkit-details-marker { display:none; }
+  .m summary::after { content:"⌄"; } .m details[open] summary::after { content:"⌃"; }
+  .m .vals { color:var(--mut); font-size:13px; font-variant-numeric:tabular-nums; margin-top:6px; word-break:break-word; }
+  .skel { height:118px; border-radius:var(--r); border:1px dashed var(--line); margin-bottom:12px; display:grid; place-items:center; color:var(--mut); font-size:13px; }
+  .grade { display:flex; gap:16px; align-items:center; }
+  .grade .gl { font-size:48px; font-weight:800; line-height:1; min-width:70px; text-align:center; }
+  .grade p { margin:4px 0 0; color:var(--mut); font-size:13px; }
+
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  .stack > * + * { margin-top:16px; }
+  .ports { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px; }
+  .port { border:1px solid var(--line); border-radius:4px; padding:8px 10px; font-size:13px; }
+  .port b { display:block; font-size:15px; }
+  .legend-p { display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; font-size:13px; color:var(--mut); }
+  .pill { display:inline-block; padding:1px 9px; border-radius:99px; font-size:12px; font-weight:600; }
+  .ok { background:#3fb95022; color:var(--ok); } .warn { background:#f5a52422; color:var(--warn); } .bad { background:#f8514922; color:var(--bad); } .mut { background:#9aa3ae22; color:var(--mut); }
+  .t-ok { color:var(--ok); } .t-warn { color:var(--warn); } .t-bad { color:var(--bad); }
+  #diag { margin:0; padding:0; list-style:none; } #diag li { padding:10px 0; border-bottom:1px solid var(--line); } #diag li:first-child { padding-top:0; } #diag li:last-child { border:0; padding-bottom:0; }
+  #diag b { margin-left:6px; } #diag p { margin:4px 0 0; color:var(--mut); font-size:14px; }
+  .empty { color:var(--mut); font-size:14px; margin:0; }
+  .code { font:700 30px ui-monospace, Menlo, monospace; letter-spacing:3px; background:var(--flux); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .dev table { width:100%; border-collapse:collapse; } .dev td { padding:6px 0; font-size:14px; border-bottom:1px solid var(--line); } .dev tr:last-child td { border:0; } .dev td:first-child { color:var(--mut); width:45%; }
+  #hist table { width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; } #hist th, #hist td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--line); } #hist th { color:var(--mut); font-weight:500; }
+  .legend { display:flex; gap:16px; font-size:13px; color:var(--mut); } .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:6px; }
+
+  @media (max-width:1100px) { .top { grid-template-columns:1fr; } .cols { grid-template-columns:1fr 1fr; } }
+  @media (max-width:700px) {
+    .run { flex-direction:column; align-items:stretch; padding:18px; } .run-btns { flex-direction:row; } .run-btns button { flex:1; }
+    .fl { font-size:24px; } .flux-label { height:40px; }
+    .dl-ul, .cols, .two, .q { grid-template-columns:1fr; } .metrics { gap:8px; } .metrics .card { padding:12px; }
+    .mid { font-size:24px; } .ud { flex-direction:column; gap:0; font-size:12px; } .when { margin-left:0; } header .hs { display:none; }
+    #hist table { font-size:12px; } #hist th:nth-child(5), #hist td:nth-child(5) { display:none; }
+  }
+  @media (prefers-reduced-motion:reduce) { .fl, .fl span, .flux-sheen { animation:none !important; } .flux-fill { transition:none; } }
+  @media print { .bg, .bar, .run { display:none; } body, html { background:#fff; color:#000; } .card { background:#fff; border-color:#ccc; } }
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true">
+  <div class="bg-grad"><div class="streak s1"></div><div class="streak s2"></div><div class="streak s3"></div><div class="streak s4"></div><div class="streak s5"></div></div>
+  <div class="noise"></div><div class="dots"></div>
+</div>
+
+<header><img src="/logo.svg" alt="4HOME"><b>Speed Test</b><div class="sp"></div><span class="hs">Velocidad y diagnóstico de tu conexión</span></header>
+
+<main>
+  <section class="hero">
+    <p class="kicker">4HOME Internet</p>
+    <h1>La velocidad que contrataste, comprobada en 30 segundos.</h1>
+    <p class="lead">Mide tu conexión como lo hace nuestro equipo técnico. Si algo no está bien, compártenos tu código de diagnóstico y lo resolvemos contigo.</p>
+  </section>
+  <section class="card run">
+    <div class="flux">
+      <div class="flux-label" id="flux-label" aria-hidden="true"></div>
+      <div class="flux-glow"><div class="flux-track" id="flux" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso de la prueba"><div class="flux-fill" id="flux-fill"><span class="flux-sheen"></span></div></div></div>
+      <div class="flux-meta"><span id="status">Para un resultado preciso conéctate por cable al módem y pausa otras descargas.</span><span id="flux-pct">0%</span></div>
+    </div>
+    <div class="run-btns">
+      <button class="pri" id="go">Iniciar prueba</button>
+      <button id="pause" disabled>Pausar</button>
+    </div>
+  </section>
+
+  <div class="top">
+    <section class="speed">
+      <h2>Tu velocidad de Internet</h2>
+      <div class="dl-ul">
+        <div class="card"><h3>Descarga <span class="i" title="Percentil 90 de las mediciones de descarga">i</span></h3><div class="num" id="down">–<small>Mbps</small></div><div class="chart" id="c-down"></div></div>
+        <div class="card"><h3>Subida <span class="i" title="Percentil 90 de las mediciones de subida">i</span></h3><div class="num" id="up">–<small>Mbps</small></div><div class="chart" id="c-up"></div></div>
+      </div>
+      <div class="metrics">
+        <div class="card"><h3>Latencia <span class="i" title="Mediana del tiempo de ida y vuelta sin carga. Flechas: durante descarga / subida">i</span></h3><div class="mid" id="lat">–<small>ms</small></div><div class="ud"><span><b>↓</b> <span id="lat-d">–</span></span><span><b>↑</b> <span id="lat-u">–</span></span></div></div>
+        <div class="card"><h3>Jitter <span class="i" title="Variación promedio entre latencias consecutivas">i</span></h3><div class="mid" id="jit">–<small>ms</small></div><div class="ud"><span><b>↓</b> <span id="jit-d">–</span></span><span><b>↑</b> <span id="jit-u">–</span></span></div></div>
+        <div class="card"><h3>Pérdida <span class="i" title="Solicitudes de latencia sin respuesta en 3 s">i</span></h3><div class="mid" id="loss">–<small>%</small></div><div class="sub" id="loss-sub">de – solicitudes</div></div>
+      </div>
+    </section>
+    <section class="side">
+      <h2>Tu conexión</h2>
+      <div class="card conn">
+        <div class="gauge" id="gauge"></div>
+        <table>
+          <tr><td>Conectado vía</td><td id="i-proto">–</td></tr>
+          <tr><td>Servidor</td><td id="i-server">–</td></tr>
+          <tr><td>Tu red (ASN)</td><td id="i-isp">–</td></tr>
+          <tr><td>Pool de IP</td><td id="i-pool">–</td></tr>
+          <tr><td>Tu IP</td><td id="i-ip">–</td></tr>
+          <tr><td>Ubicación aprox.</td><td id="i-city">–</td></tr>
+          <tr><td>IPv6 disponible</td><td id="i-v6">–</td></tr>
+          <tr><td>Plan contratado</td><td><input id="plan" type="number" min="1" placeholder="Mbps (opcional)"></td></tr>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="bar">
+    <button id="cmp"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Comparar</button>
+    <button id="wa" disabled><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-13.5 7.8L3 21l1.2-4.5A9 9 0 1 1 21 12z"/></svg>WhatsApp soporte</button>
+    <button id="dl" disabled><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16"/></svg>Descargar reporte</button>
+    <button id="copy" disabled><svg viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>Copiar</button>
+    <button id="print" disabled><svg viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></svg>PDF</button>
+    <div class="when" id="when">Aún no hay mediciones.</div>
+  </div>
+
+  <section class="block">
+    <h2>Calidad de la red <span class="i" title="Calificación según velocidad, latencia, jitter y pérdida">i</span></h2>
+    <div class="q">
+      <div class="card"><svg viewBox="0 0 40 40"><rect x="4" y="7" width="32" height="22" rx="3"/><path d="M17 13v10l8-5z"/><path d="M13 34h14"/></svg><div><h4>Streaming</h4><div class="stars" id="q-stream">★★★★★</div><div class="sub" id="q-stream-t">Sin medir</div></div></div>
+      <div class="card"><svg viewBox="0 0 40 40"><path d="M12 12h16a7 7 0 0 1 7 7l1 9a4 4 0 0 1-7 2l-3-4H14l-3 4a4 4 0 0 1-7-2l1-9a7 7 0 0 1 7-7z"/><path d="M11 18v6M8 21h6"/><circle cx="27" cy="19" r="1"/><circle cx="30" cy="23" r="1"/></svg><div><h4>Videojuegos</h4><div class="stars" id="q-game">★★★★★</div><div class="sub" id="q-game-t">Sin medir</div></div></div>
+      <div class="card"><svg viewBox="0 0 40 40"><rect x="3" y="11" width="24" height="18" rx="2"/><path d="M27 17l9-5v16l-9-5"/></svg><div><h4>Videollamadas</h4><div class="stars" id="q-call">★★★★★</div><div class="sub" id="q-call-t">Sin medir</div></div></div>
+    </div>
+  </section>
+
+  <div class="cols block">
+    <section><h2>Mediciones de descarga</h2><div id="m-down"></div></section>
+    <section><h2>Mediciones de subida</h2><div id="m-up"></div></section>
+    <section><h2>Mediciones de latencia</h2><div id="m-lat"></div></section>
+  </div>
+
+  <div class="two block">
+    <section class="stack">
+      <h2>Diagnóstico</h2>
+      <div class="card"><ul id="diag"><li class="empty">Ejecuta la prueba para ver el diagnóstico.</li></ul></div>
+      <div class="card">
+        <h3>Código de diagnóstico</h3>
+        <div class="code" id="code">— — — —</div>
+        <p class="sub" style="margin:4px 0 0">Comparte este código con soporte de 4HOME para que revisen tu prueba.</p>
+      </div>
+      <div class="card dev"><h3 style="margin-bottom:6px">Tu dispositivo</h3><table id="dev"></table></div>
+    </section>
+    <section>
+      <h2>Puertos expuestos en tu IP <span class="i" title="Conexiones TCP desde nuestro servidor hacia tu IP pública. Abierto = accesible desde Internet">i</span></h2>
+      <div class="card">
+        <div class="ports" id="ports"></div>
+        <div class="legend-p"><span><span class="pill bad">abierto</span> accesible desde Internet</span><span><span class="pill mut">cerrado</span> responde pero rechaza</span><span><span class="pill ok">filtrado</span> no responde (firewall/CGNAT)</span></div>
+      </div>
+    </section>
+  </div>
+
+  <section id="hist" style="display:none">
+    <h2>Historial en este dispositivo</h2>
+    <div class="card">
+      <div class="legend"><span><i style="background:var(--down)"></i>Descarga</span><span><i style="background:var(--up)"></i>Subida</span></div>
+      <div id="h-chart"></div>
+      <table id="h-table"></table>
+      <button id="h-clear" style="margin-top:12px">Borrar historial</button>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const pct = (a, q) => { if (!a || !a.length) return null; const s = [...a].sort((x, y) => x - y); return s[Math.round(q * (s.length - 1))]; };
+const median = a => pct(a, .5);
+const jitter = a => !a || a.length < 2 ? null : a.slice(1).reduce((s, v, i) => s + Math.abs(v - a[i]), 0) / (a.length - 1);
+const f1 = n => n == null || isNaN(n) ? '–' : n >= 100 ? Math.round(n) : n.toFixed(1);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+const size = b => b >= 1e6 ? b / 1e6 + ' MB' : b / 1e3 + ' kB';
+const niceMax = v => { const p = 10 ** Math.floor(Math.log10(v || 1)); return [1, 2, 2.5, 5, 10].map(m => m * p).find(m => m >= v); };
+const axis = v => v >= 1000 ? +(v / 1000).toFixed(1) + 'G' : +v.toFixed(1) + '';
+const setNum = (id, v) => $(id).firstChild.textContent = f1(v);
+const status = t => $('status').textContent = t;
+const svg = (w, h, inner) => `<svg viewBox="0 0 ${w} ${h}" width="100%" style="display:block">${inner}</svg>`;
+const C = { down: '#74e1ff', up: '#a78bfa', lat: '#f5a524' };
+const link = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${esc(text)}</a>`;
+
+const DOWN = [[1e5, 10], [1e6, 8], [1e7, 6], [2.5e7, 4], [1e8, 3]];
+const UP = [[1e5, 8], [1e6, 6], [1e7, 4], [2.5e7, 4], [5e7, 3]];
+const PHASE_MAX_S = 20;
+
+let R = {}, paused = false;
+const gate = async () => { while (paused) await sleep(200); };
+
+// ---------- progressive flux loader ----------
+const flux = { pct: 0, label: '' };
+function setFlux(p, label = flux.label) {
+  flux.pct = Math.max(0, Math.min(100, p));
+  $('flux-fill').style.clipPath = `inset(0 ${100 - flux.pct}% 0 0 round 999px)`;
+  $('flux-pct').textContent = Math.round(flux.pct) + '%';
+  $('flux').setAttribute('aria-valuenow', Math.round(flux.pct));
+  $('flux').setAttribute('aria-valuetext', `${Math.round(flux.pct)}% – ${label}`);
+  if (label === flux.label) return;
+  flux.label = label;
+  const host = $('flux-label');
+  host.querySelectorAll('.fl:not(.out)').forEach(o => { o.classList.add('out'); setTimeout(() => o.remove(), 500); });
+  const el = document.createElement('div');
+  el.className = 'fl';
+  el.innerHTML = [...label].map((c, i) => `<span style="animation-delay:${(.43 + i * .035).toFixed(3)}s">${c === ' ' ? '&nbsp;' : esc(c)}</span>`).join('');
+  host.append(el);
+}
+
+// ---------- charts ----------
+function area(el, pts, color) {
+  if (!pts.length) { el.innerHTML = '<div class="ph">La gráfica aparece durante la prueba</div>'; return; }
+  const W = Math.max(el.clientWidth, 200), H = Math.max(el.clientHeight, 150), P = 6;
+  const tMax = Math.max(pts.at(-1).t, .001), vMax = Math.max(...pts.map(p => p.v)) * 1.15;
+  const x = t => P + t / tMax * (W - 2 * P), y = v => H - P - v / vMax * (H - 2 * P);
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join('');
+  const p90 = y(pct(pts.map(p => p.v), .9)), id = 'g' + color.slice(1);
+  el.innerHTML = svg(W, H, `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".5"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${line}L${x(pts.at(-1).t)},${H}L${x(pts[0].t)},${H}Z" fill="url(#${id})"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round"/>
+    ${pts.map(p => `<circle cx="${x(p.t)}" cy="${y(p.v)}" r="2.6" fill="${color}"/>`).join('')}
+    <line x1="0" x2="${W}" y1="${p90}" y2="${p90}" stroke="rgba(255,255,255,.35)" stroke-dasharray="5 5"/>
+    <text x="4" y="${p90 - 7}" fill="rgba(255,255,255,.75)" font-size="12">Percentil 90</text>`);
+}
+
+function box(vals, max, color, unit) {
+  const W = 520, H = 72, L = 44, Rr = 18, x = v => L + Math.min(v, max) / max * (W - L - Rr);
+  const ticks = [0, max / 2, max].map(t => `<line x1="${x(t)}" x2="${x(t)}" y1="6" y2="48" stroke="rgba(255,255,255,.12)"/><text x="${x(t)}" y="66" fill="#9aa3ae" font-size="13" text-anchor="middle">${axis(t)}</text>`).join('');
+  let body = '';
+  if (vals.length) {
+    const [mn, q1, md, q3, mx] = [0, .25, .5, .75, 1].map(q => pct(vals, q));
+    body = `<line x1="${x(mn)}" x2="${x(mx)}" y1="20" y2="20" stroke="${color}"/><line x1="${x(mn)}" x2="${x(mn)}" y1="14" y2="26" stroke="${color}"/><line x1="${x(mx)}" x2="${x(mx)}" y1="14" y2="26" stroke="${color}"/>
+      <rect x="${x(q1)}" y="12" width="${Math.max(3, x(q3) - x(q1))}" height="16" rx="2" fill="${color}55" stroke="${color}"/><line x1="${x(md)}" x2="${x(md)}" y1="12" y2="28" stroke="#fff" stroke-width="1.5"/>
+      ${vals.map((v, i) => `<circle cx="${x(v)}" cy="${37 + (i % 3) * 3}" r="2.6" fill="${color}"/>`).join('')}`;
+  }
+  return svg(W, H, `<text x="0" y="24" fill="#9aa3ae" font-size="13">${unit}</text>${ticks}${body}`);
+}
+
+function gauge(v, label, up) {
+  const plan = +$('plan').value;
+  const max = plan ? niceMax(plan * 1.2) : [100, 250, 500, 1000, 2500, 5000, 10000, 25000].find(m => m >= (v || 0) * 1.1) || 50000;
+  const r = 80, c = 2 * Math.PI * r, arc = c * 2 / 3, frac = Math.min((v || 0) / max, 1);
+  const grad = up ? `<stop offset="0" stop-color="#6d4bd8"/><stop offset="1" stop-color="#c4b5fd"/>` : `<stop offset="0" stop-color="#0a6f8a"/><stop offset="1" stop-color="#74e1ff"/>`;
+  $('gauge').innerHTML = svg(220, 175, `<defs><linearGradient id="gg" x1="0" y1="1" x2="1" y2="0">${grad}</linearGradient></defs>
+    <circle cx="110" cy="105" r="${r}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${arc} ${c}" transform="rotate(150 110 105)"/>
+    <circle cx="110" cy="105" r="${r}" fill="none" stroke="url(#gg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${arc * frac} ${c}" transform="rotate(150 110 105)"/>
+    <text x="110" y="108" fill="#fff" font-size="36" font-weight="700" text-anchor="middle">${f1(v)}</text>
+    <text x="110" y="132" fill="#9aa3ae" font-size="13" text-anchor="middle">Mbps · ${label}</text>
+    <text x="42" y="170" fill="#9aa3ae" font-size="12" text-anchor="middle">0</text><text x="178" y="170" fill="#9aa3ae" font-size="12" text-anchor="middle">${axis(max)}</text>`);
+}
+
+function bars(hist) {
+  const W = 1100, H = 180, P = 30, n = hist.length, max = niceMax(Math.max(...hist.flatMap(h => [h.down || 0, h.up || 0]), 1));
+  const bw = Math.min(28, (W - P) / n / 2.6), y = v => H - 20 - (v || 0) / max * (H - 36);
+  return svg(W, H, [0, max / 2, max].map(t => `<line x1="${P}" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="rgba(255,255,255,.08)"/><text x="0" y="${y(t) + 4}" fill="#9aa3ae" font-size="12">${axis(t)}</text>`).join('')
+    + hist.map((h, i) => { const cx = P + (i + .5) * (W - P) / n;
+      return `<rect x="${cx - bw - 1}" y="${y(h.down)}" width="${bw}" height="${H - 20 - y(h.down)}" rx="3" fill="${C.down}"><title>${f1(h.down)} Mbps</title></rect>
+              <rect x="${cx + 1}" y="${y(h.up)}" width="${bw}" height="${H - 20 - y(h.up)}" rx="3" fill="${C.up}"><title>${f1(h.up)} Mbps</title></rect>
+              <text x="${cx}" y="${H - 4}" fill="#9aa3ae" font-size="11" text-anchor="middle">${new Date(h.at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</text>`; }).join(''));
+}
+
+// ---------- measurements ----------
+async function ping(timeout = 3000) {
+  const t = performance.now();
+  await fetch('/__down?bytes=0&r=' + Math.random(), { cache: 'no-store', signal: AbortSignal.timeout(timeout) });
+  return performance.now() - t;
+}
+
+async function pingLoop(signal, out) {
+  while (!signal.aborted) {
+    await gate(); R.pings++;
+    try { out.push(await ping()); } catch { R.lost++; }
+    await sleep(100);
+  }
+}
+
+const chunk = crypto.getRandomValues(new Uint8Array(65536));
+const payload = n => new Blob(Array(Math.ceil(n / chunk.length)).fill(chunk)).slice(0, n);
+performance.setResourceTimingBufferSize?.(1000);
+
+// Transfer time from Resource Timing (excludes request setup / server think time), like Cloudflare.
+// Download: first byte -> last byte. Upload: request sent -> response started, minus one RTT.
+async function transfer(kind, bytes) {
+  const url = new URL(kind === 'down' ? `/__down?bytes=${bytes}&r=${Math.random()}` : `/__up?r=${Math.random()}`, location.href).href;
+  const t0 = performance.now();
+  if (kind === 'down') await (await fetch(url, { cache: 'no-store' })).arrayBuffer();
+  else await (await fetch(url, { method: 'POST', body: payload(bytes) })).text();
+  const total = performance.now() - t0;
+  await sleep(0);
+  const e = performance.getEntriesByName(url).at(-1);
+  performance.clearResourceTimings();
+  let dur = e && e.responseStart > 0
+    ? (kind === 'down' ? e.responseEnd - e.responseStart : e.responseStart - e.requestStart - R.latencyMin)
+    : total - R.latencyMin;
+  if (!(dur > 0.05)) dur = Math.max(total - R.latencyMin, 0.05);
+  return { total, dur };
+}
+
+// Cloudflare-style: growing request sizes, per-request speed, result = 90th percentile
+async function phase(kind, tiers, base, span, label) {
+  const pts = [], loaded = [], ctl = new AbortController(), t0 = performance.now();
+  const planned = tiers.reduce((s, t) => s + t[1], 0);
+  let done = 0, slow = false;
+  const elapsed = () => (performance.now() - t0) / 1000;
+  R[kind + 'Tiers'] = []; R[kind + 'Loaded'] = loaded;
+  setFlux(base, label);
+  pingLoop(ctl.signal, loaded);
+  for (const [bytes, count] of tiers) {
+    if (slow || elapsed() > PHASE_MAX_S) break;
+    const tier = { bytes, count, vals: [] };
+    R[kind + 'Tiers'].push(tier);
+    for (let i = 0; i < count; i++) {
+      await gate();
+      const { total, dur } = await transfer(kind, bytes);
+      const v = bytes * 8 / (dur * 1e3);
+      tier.vals.push(v); pts.push({ t: elapsed(), v }); done++;
+      area($('c-' + kind), pts, C[kind]); setNum(kind, pct(pts.map(p => p.v), .9));
+      gauge(v, kind === 'down' ? 'descarga' : 'subida', kind === 'up');
+      setFlux(base + span * Math.min(1, Math.max(done / planned, elapsed() / PHASE_MAX_S)), label);
+      if (total > 1000) slow = true;
+      renderMeasurements();
+      if (elapsed() > PHASE_MAX_S) break;
+    }
+  }
+  ctl.abort();
+  R[kind] = pct(pts.map(p => p.v), .9); R[kind + 'Pts'] = pts;
+  setFlux(base + span, label);
+}
+
+const GRADES = [[5, 'A+', 't-ok'], [30, 'A', 't-ok'], [60, 'B', 't-warn'], [200, 'C', 't-warn'], [400, 'D', 't-bad'], [Infinity, 'F', 't-bad']];
+function renderMeasurements() {
+  const skel = (n, t) => Array.from({ length: n }, () => `<div class="skel">${t}</div>`).join('');
+  const all = [...(R.downTiers || []), ...(R.upTiers || [])].flatMap(t => t.vals);
+  const max = niceMax(Math.max(...all, 1) * 1.05);
+  const card = (title, vals, total, m, color, unit) => `<div class="card m"><div class="mh">${title} <span>(${vals.length}${total ? '/' + total : ''})</span></div>${box(vals, m, color, unit)}
+    <details><summary>Mediana ${f1(median(vals))} ${unit} · mín ${f1(pct(vals, 0))} · máx ${f1(pct(vals, 1))}</summary><div class="vals">${vals.map(v => f1(v)).join(' · ') || '—'}</div></details></div>`;
+  const tiers = (list, word, color) => list?.length ? list.map(t => card(`${size(t.bytes)} ${word}`, t.vals, t.count, max, color, 'Mbps')).join('') : skel(4, 'Pendiente');
+  $('m-down').innerHTML = tiers(R.downTiers, 'descarga', C.down);
+  $('m-up').innerHTML = tiers(R.upTiers, 'subida', C.up);
+  const lat = [['Latencia sin carga', R.latVals], ['Latencia durante descarga', R.downLoaded], ['Latencia durante subida', R.upLoaded]].filter(x => x[1]?.length);
+  const lmax = niceMax(Math.max(...lat.flatMap(x => x[1]), 1) * 1.05);
+  let grade = '<div class="skel">Calificación de bufferbloat pendiente</div>';
+  if (R.latUp != null) {
+    const inc = Math.max(0, Math.max(R.latDown ?? 0, R.latUp ?? 0) - R.latency), [, g, cls] = GRADES.find(([lim]) => inc < lim);
+    grade = `<div class="card m grade"><div class="gl ${cls}">${g}</div><div><div class="mh">Bufferbloat</div><p>La latencia aumenta +${f1(inc)} ms cuando la línea está en uso. ${g.startsWith('A') ? 'Excelente para llamadas y juegos.' : g === 'B' ? 'Aceptable; puede notarse en juegos.' : 'Se notará en llamadas y juegos mientras alguien descarga.'}</p></div></div>`;
+  }
+  $('m-lat').innerHTML = (lat.map(([t, v]) => card(t, v, 0, lmax, C.lat, 'ms')).join('') || skel(3, 'Pendiente')) + grade;
+}
+
+// ---------- info ----------
+async function netInfo() {
+  const [me, info, v6] = await Promise.all([
+    fetch('/api/ip').then(r => r.json()).catch(() => ({})),
+    fetch('https://ipinfo.io/json').then(r => r.json()).catch(() => ({})),
+    fetch('https://api64.ipify.org?format=json').then(r => r.json()).catch(() => ({})),
+  ]);
+  R.publicIp = info.ip || me.ip;
+  const net = R.publicIp ? await fetch(`https://stat.ripe.net/data/network-info/data.json?resource=${encodeURIComponent(R.publicIp)}`).then(r => r.json()).then(j => j.data || {}).catch(() => ({})) : {};
+  const m = (info.org || '').match(/^AS(\d+)\s*(.*)$/);
+  Object.assign(R, { ip: me.ip, server: me.server, asn: m?.[1] || net.asns?.[0], isp: m?.[2] || info.org, prefix: net.prefix,
+    city: [info.city, info.region].filter(Boolean).join(', '), ipv6: v6.ip ? v6.ip.includes(':') : null });
+  $('i-proto').textContent = me.v6 ? 'IPv6' : 'IPv4';
+  $('i-server').textContent = R.server || '–';
+  $('i-isp').innerHTML = R.asn ? `${esc(R.isp || '')} (${link(`https://www.peeringdb.com/asn/${R.asn}`, 'AS' + R.asn)})` : esc(R.isp || '–');
+  $('i-pool').innerHTML = R.prefix ? link(`https://bgp.he.net/net/${R.prefix}`, R.prefix) : '–';
+  $('i-ip').innerHTML = R.publicIp ? link(`https://ipinfo.io/${R.publicIp}`, R.publicIp) : '–';
+  $('i-city').textContent = R.city || '–';
+  $('i-v6').textContent = R.ipv6 == null ? '–' : R.ipv6 ? 'Sí' : 'No';
+}
+
+function deviceInfo() {
+  const c = navigator.connection || {}, ua = navigator.userAgentData;
+  Object.assign(R, { conn: { type: c.type, effective: c.effectiveType, downlink: c.downlink }, cores: navigator.hardwareConcurrency, memory: navigator.deviceMemory });
+  const row = (k, v) => `<tr><td>${k}</td><td>${esc(v ?? '–')}</td></tr>`;
+  $('dev').innerHTML = row('Sistema / navegador', ua ? ua.platform + ' · ' + ua.brands.map(b => b.brand).filter(b => !/Not/.test(b)).join(', ') : navigator.userAgent.slice(0, 70))
+    + row('Tipo de conexión', c.type || 'No disponible en este navegador') + row('Núcleos CPU', R.cores) + row('Memoria', R.memory ? R.memory + ' GB' : null) + row('Pantalla', `${screen.width}×${screen.height}`);
+}
+
+const PORT_LIST = [[21, 'FTP'], [22, 'SSH'], [23, 'Telnet'], [53, 'DNS'], [80, 'HTTP'], [443, 'HTTPS'], [445, 'SMB'], [554, 'RTSP (cámaras)'], [1723, 'PPTP'], [3389, 'RDP'], [5060, 'SIP'], [7547, 'TR-069 (CPE)'], [8080, 'HTTP alt'], [8291, 'Winbox MikroTik'], [8443, 'HTTPS alt']];
+const portCards = list => list.map(p => `<div class="port"><b>${p.port}</b>${esc(p.name)}<br><span class="pill ${{ abierto: 'bad', cerrado: 'mut', filtrado: 'ok' }[p.state] || 'mut'}">${p.state || 'sin revisar'}</span></div>`).join('');
+
+async function portScan() {
+  const r = await fetch('/api/ports').then(r => r.json()).catch(e => ({ error: e.message }));
+  if (r.error) { status(r.error); return; }
+  R.ports = r.ports;
+  $('ports').innerHTML = portCards(r.ports);
+}
+
+// ---------- scoring & diagnosis ----------
+function scores() {
+  const bloat = Math.max(R.latDown ?? 0, R.latUp ?? 0) - R.latency, loss = R.loss;
+  const clamp = n => Math.max(1, Math.min(5, n));
+  R.score = {
+    stream: clamp((R.down >= 25) + (R.down >= 15) + (R.down >= 8) + (R.down >= 3) + 1 - (loss > 2)),
+    game: clamp(5 - (R.latency > 30) - (R.latency > 60) - (R.jitter > 10) - (R.jitter > 30) - (bloat > 100) - (loss > 1)),
+    call: clamp(5 - (R.up < 3) - (R.up < 1) - (R.latency > 80) - (R.jitter > 20) - (bloat > 150) - (loss > 2)),
+  };
+  const words = ['', 'Deficiente', 'Regular', 'Aceptable', 'Buena', 'Excelente'];
+  for (const k of ['stream', 'game', 'call']) {
+    $('q-' + k).innerHTML = `<b>${'★'.repeat(R.score[k])}</b>${'★'.repeat(5 - R.score[k])}`;
+    $('q-' + k + '-t').textContent = words[R.score[k]];
+  }
+}
+
+function diagnose() {
+  const d = [], add = (lvl, title, txt) => d.push({ lvl, title, txt });
+  const plan = +$('plan').value;
+  if (plan) {
+    const p = R.down / plan * 100;
+    if (p < 50) add('bad', `Descarga al ${p.toFixed(0)}% del plan`, 'Muy por debajo de lo contratado. Si ya probaste por cable, envía este código a soporte.');
+    else if (p < 80) add('warn', `Descarga al ${p.toFixed(0)}% del plan`, 'Por debajo de lo esperado. Repite por cable; en Wi‑Fi es normal perder velocidad.');
+    else add('ok', `Descarga al ${Math.min(p, 100).toFixed(0)}% del plan`, 'La velocidad corresponde a tu plan.');
+  }
+  if (R.latency > 60) add('warn', 'Latencia alta', `${f1(R.latency)} ms en reposo. Puede deberse a Wi‑Fi saturado, distancia al router o a la red.`);
+  if (R.jitter > 30) add('bad', 'Conexión inestable (jitter alto)', 'Variaciones fuertes de latencia: típico de interferencia Wi‑Fi o problemas en la línea. Afecta llamadas y juegos.');
+  if (R.loss > 2) add('bad', `Pérdida de ${f1(R.loss)}%`, 'Solicitudes sin respuesta durante la prueba. Puede indicar problemas en la línea o saturación severa.');
+  const bloat = Math.max(R.latDown ?? 0, R.latUp ?? 0) - R.latency;
+  if (bloat > 150) add('bad', 'Saturación (bufferbloat)', `La latencia sube ${f1(bloat)} ms cuando la línea se usa. Otros dispositivos descargando o el router no gestiona bien la cola.`);
+  else if (bloat > 60) add('warn', 'La latencia sube con carga', `+${f1(bloat)} ms bajo uso. Puede notarse en videollamadas mientras alguien descarga.`);
+  if (['wifi', 'cellular'].includes(R.conn?.type)) add('warn', `Prueba hecha por ${R.conn.type === 'wifi' ? 'Wi‑Fi' : 'datos móviles'}`, 'Para descartar el Wi‑Fi repite la prueba conectado por cable al módem.');
+  if ((R.cores && R.cores <= 2) || (R.memory && R.memory <= 2)) add('warn', 'Equipo con pocos recursos', 'Tu dispositivo puede no alcanzar velocidades altas aunque la línea sí las tenga.');
+  const open = (R.ports || []).filter(p => p.state === 'abierto');
+  const risky = open.filter(p => [21, 23, 445, 1723, 3389, 7547, 8291].includes(p.port));
+  if (risky.length) add('bad', 'Puertos de riesgo abiertos', risky.map(p => `${p.port} (${p.name})`).join(', ') + ' accesibles desde Internet. Revisa tu router o contacta soporte.');
+  else if (open.length) add('ok', 'Servicios publicados', open.map(p => `${p.port} (${p.name})`).join(', ') + ' accesibles desde Internet.');
+  if (R.ports && !open.length && R.ports.every(p => p.state === 'filtrado')) add('ok', 'Sin puertos expuestos', 'Tu IP no acepta conexiones entrantes (firewall o CGNAT). Si necesitas abrir puertos (cámaras, servidores), solicita IP pública a soporte.');
+  if (R.ipv6 === false) add('warn', 'Sin IPv6', 'Tu conexión solo usa IPv4. No afecta la navegación normal.');
+  if (!d.some(x => x.lvl !== 'ok')) add('ok', 'Todo en orden', 'No se detectaron problemas en esta prueba.');
+  R.diag = d;
+  $('diag').innerHTML = d.map(x => `<li><span class="pill ${x.lvl}">${{ ok: 'OK', warn: 'Aviso', bad: 'Problema' }[x.lvl]}</span><b>${esc(x.title)}</b><p>${esc(x.txt)}</p></li>`).join('');
+}
+
+// ---------- history & report ----------
+const HKEY = '4home-hist';
+const loadHist = () => { try { return JSON.parse(localStorage.getItem(HKEY)) || []; } catch { return []; } };
+function saveHist() {
+  const h = [...loadHist(), { at: R.at, down: R.down, up: R.up, lat: R.latency, jit: R.jitter, loss: R.loss, id: R.id }].slice(-15);
+  try { localStorage.setItem(HKEY, JSON.stringify(h)); } catch {}
+}
+function renderHist(show) {
+  const h = loadHist();
+  $('hist').style.display = h.length && (show || $('hist').style.display !== 'none') ? '' : 'none';
+  if (!h.length) return;
+  $('h-chart').innerHTML = bars(h);
+  $('h-table').innerHTML = '<tr><th>Fecha</th><th>Descarga</th><th>Subida</th><th>Latencia</th><th>Jitter</th><th>Código</th></tr>'
+    + h.slice().reverse().map(x => `<tr><td>${new Date(x.at).toLocaleString()}</td><td>${f1(x.down)} Mbps</td><td>${f1(x.up)} Mbps</td><td>${f1(x.lat)} ms</td><td>${f1(x.jit)} ms</td><td>${esc(x.id || '–')}</td></tr>`).join('');
+}
+
+function reportText() {
+  return [`4HOME Speed Test — código ${R.id || '–'} — ${new Date(R.at).toLocaleString()}`,
+    `Descarga: ${f1(R.down)} Mbps | Subida: ${f1(R.up)} Mbps`,
+    `Latencia: ${f1(R.latency)} ms (↓${f1(R.latDown)} ↑${f1(R.latUp)}) | Jitter: ${f1(R.jitter)} ms | Pérdida: ${f1(R.loss)}%`,
+    `IP: ${R.publicIp || '–'} | Pool: ${R.prefix || '–'} | Red: ${R.isp || '–'}${R.asn ? ' AS' + R.asn : ''} | IPv6: ${R.ipv6 ? 'sí' : 'no'} | Conexión: ${R.conn?.type || '?'}`,
+    `Plan: ${R.plan ? R.plan + ' Mbps' : 'no indicado'} | Puertos abiertos: ${(R.ports || []).filter(p => p.state === 'abierto').map(p => p.port).join(', ') || 'ninguno'}`,
+    '', 'Diagnóstico:', ...(R.diag || []).map(x => `- ${x.title}: ${x.txt}`)].join('\n');
+}
+
+// ---------- run ----------
+function resetView() {
+  area($('c-down'), [], C.down); area($('c-up'), [], C.up);
+  ['down', 'up', 'lat', 'jit', 'loss'].forEach(id => setNum(id, null));
+  ['lat-d', 'lat-u', 'jit-d', 'jit-u'].forEach(id => $(id).textContent = '–');
+  $('loss-sub').textContent = 'de – solicitudes';
+  $('ports').innerHTML = portCards(PORT_LIST.map(([port, name]) => ({ port, name })));
+  renderMeasurements(); gauge(0, 'listo');
+}
+
+async function run() {
+  R = { at: new Date().toISOString(), pings: 0, lost: 0 };
+  const btns = ['wa', 'dl', 'copy', 'print'];
+  $('go').disabled = true; $('pause').disabled = false; btns.forEach(b => $(b).disabled = true);
+  $('code').textContent = '— — — —'; $('when').textContent = 'Midiendo…';
+  resetView();
+  try {
+    setFlux(2, 'conectando'); status('Obteniendo información de red…'); deviceInfo(); await netInfo();
+
+    setFlux(5, 'midiendo latencia'); status('Midiendo latencia sin carga…');
+    R.latVals = [];
+    for (let i = 0; i < 20; i++) {
+      await gate(); R.pings++;
+      try { R.latVals.push(await ping()); } catch { R.lost++; }
+      setNum('lat', median(R.latVals)); setFlux(5 + i / 19 * 10);
+    }
+    R.latency = median(R.latVals); R.latencyMin = R.latVals.length ? Math.min(...R.latVals) : 0; R.jitter = jitter(R.latVals);
+    setNum('jit', R.jitter); renderMeasurements();
+
+    status('Descargando archivos de prueba de 100 kB a 100 MB…');
+    await phase('down', DOWN, 15, 40, 'midiendo descarga');
+    R.latDown = median(R.downLoaded); $('lat-d').textContent = f1(R.latDown) + ' ms'; $('jit-d').textContent = f1(jitter(R.downLoaded)) + ' ms';
+
+    status('Subiendo archivos de prueba de 100 kB a 50 MB…');
+    await phase('up', UP, 55, 35, 'midiendo subida');
+    R.latUp = median(R.upLoaded); $('lat-u').textContent = f1(R.latUp) + ' ms'; $('jit-u').textContent = f1(jitter(R.upLoaded)) + ' ms';
+
+    R.loss = R.pings ? R.lost / R.pings * 100 : 0; setNum('loss', R.loss); $('loss-sub').textContent = `de ${R.pings} solicitudes`;
+    renderMeasurements(); gauge(R.down, 'descarga');
+
+    setFlux(91, 'revisando puertos'); status('Revisando puertos de tu IP pública desde nuestro servidor…'); await portScan();
+    setFlux(97, 'generando diagnóstico');
+    R.plan = +$('plan').value || null;
+    scores(); diagnose();
+
+    const res = await fetch('/api/result', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(R) }).then(r => r.json()).catch(() => ({}));
+    R.id = res.id; $('code').textContent = R.id || 'no guardado';
+    saveHist(); renderHist();
+    $('when').textContent = 'Medido a las ' + new Date().toLocaleTimeString();
+    setFlux(100, 'prueba completada');
+    if (R.ports) status('Listo. Revisa el diagnóstico abajo o compártelo con soporte.');
+    btns.forEach(b => $(b).disabled = false);
+  } catch (e) {
+    setFlux(flux.pct, 'error en la prueba'); status('Error: ' + e.message);
+  }
+  paused = false; $('pause').textContent = 'Pausar'; $('pause').disabled = true;
+  $('go').disabled = false; $('go').textContent = 'Repetir prueba';
+}
+
+let beforePause = '';
+$('go').onclick = run;
+$('pause').onclick = () => {
+  paused = !paused;
+  $('pause').textContent = paused ? 'Reanudar' : 'Pausar';
+  if (paused) { beforePause = flux.label; setFlux(flux.pct, 'en pausa'); } else setFlux(flux.pct, beforePause);
+};
+$('cmp').onclick = () => { renderHist(true); if (!loadHist().length) status('Aún no hay pruebas guardadas en este dispositivo.'); else $('hist').scrollIntoView({ behavior: 'smooth' }); };
+$('h-clear').onclick = () => { try { localStorage.removeItem(HKEY); } catch {} $('hist').style.display = 'none'; };
+$('wa').onclick = () => window.open('https://wa.me/?text=' + encodeURIComponent(reportText()), '_blank', 'noopener');
+$('copy').onclick = () => navigator.clipboard.writeText(reportText()).then(() => { $('copy').lastChild.textContent = 'Copiado ✓'; setTimeout(() => $('copy').lastChild.textContent = 'Copiar', 2000); });
+$('print').onclick = () => window.print();
+$('dl').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([reportText()], { type: 'text/plain' }));
+  a.download = `4home-speedtest-${R.id || 'reporte'}.txt`; a.click();
+};
+
+resetView();
+deviceInfo();
+renderHist();
+setFlux(0, 'listo para medir');
+</script>
+</body>
+</html>

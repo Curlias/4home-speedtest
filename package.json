@@ -1,0 +1,13 @@
+{
+  "name": "4home-speedtest",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Speed test and network diagnostics page for 4HOME.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

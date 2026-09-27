@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: 4home-speedtest
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: TRUST_PROXY
+        value: "1"
+      - key: SERVER_NAME
+        value: Render 4HOME Speedtest
+      - key: RESULTS_PATH
+        value: /tmp/4home-speedtest/results.jsonl

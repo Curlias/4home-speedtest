@@ -6,6 +6,8 @@ services:
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /healthz
+    domains:
+      - speedtest.4home.lat
     envVars:
       - key: NODE_VERSION
         value: 20

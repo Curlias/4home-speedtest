@@ -43,9 +43,18 @@
   .i { color:var(--mut); font-size:11px; cursor:help; border:1px solid var(--mut); border-radius:50%; width:15px; height:15px; display:inline-grid; place-items:center; margin-left:5px; vertical-align:1px; text-transform:none; }
   .card { background:var(--card); border:1px solid #1e2429; border-top-color:#2a3238; border-radius:var(--r); padding:18px 20px; }
   .block { margin-bottom:36px; }
-  .hero { padding:28px 0 26px; max-width:760px; }
-  .hero h1 { margin:0; font-size:clamp(28px, 4vw, 44px); line-height:1.1; letter-spacing:-.8px; font-weight:700; text-wrap:balance; }
-  .lead { margin:12px 0 0; color:var(--mut); font-size:16px; max-width:620px; }
+  .hero { padding:32px 0 28px; display:grid; grid-template-columns:minmax(320px,.8fr) minmax(560px,1.2fr); gap:64px; align-items:end; border-bottom:1px solid var(--line); margin-bottom:28px; }
+  .eyebrow { display:block; margin-bottom:10px; color:var(--mut); font:600 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing:.15em; text-transform:uppercase; }
+  .hero h1 { margin:0; font-size:clamp(34px, 4vw, 52px); line-height:.98; letter-spacing:-1.8px; font-weight:650; }
+  .hero h1 span { color:var(--down); font-weight:450; }
+  .net-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; }
+  .net-head h2 { margin:0; font-size:14px; }
+  .net-head span { color:var(--mut); font:500 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing:.12em; text-transform:uppercase; }
+  .net-summary { display:grid; grid-template-columns:1fr 1fr; column-gap:24px; border-top:1px solid #2a343a; }
+  .net-item { min-width:0; padding:8px 0 9px; border-bottom:1px solid var(--line); }
+  .net-item.wide { grid-column:1 / -1; }
+  .net-item span { display:block; margin-bottom:2px; color:var(--mut); font-size:11px; }
+  .net-item strong { display:block; color:var(--txt); font-size:13px; font-weight:600; overflow-wrap:anywhere; }
 
   /* Progressive flux loader (vanilla port) */
   .run { display:flex; gap:28px; align-items:center; margin-bottom:28px; padding:22px 26px; }
@@ -85,14 +94,10 @@
   .mid { font-size:32px; font-weight:700; font-variant-numeric:tabular-nums; margin:2px 0; }
   .ud { display:flex; gap:16px; font-size:14px; font-variant-numeric:tabular-nums; } .ud b { color:var(--mut); font-weight:400; }
   .sub { color:var(--mut); font-size:13px; }
-  .conn { display:grid; grid-template-columns:minmax(180px,220px) minmax(300px,1.15fr) minmax(340px,1fr); gap:22px; align-items:center; }
-  .conn table { width:100%; border-collapse:collapse; font-size:14px; } .conn td { padding:6px 0; border-bottom:1px solid var(--line); vertical-align:top; } .conn tr:last-child td { border:0; } .conn td:first-child { color:var(--mut); width:42%; padding-right:8px; }
   a { color:var(--down); text-decoration:none; } a:hover { text-decoration:underline; }
-  input { font:inherit; background:rgba(255,255,255,.05); border:1px solid var(--line); color:var(--txt); border-radius:2px; padding:6px 10px; width:100%; }
-  .gauge { max-width:220px; width:100%; margin:auto; }
-  .gauge text { font-variant-numeric:tabular-nums; }
-  .map { height:190px; border-radius:2px; overflow:hidden; background:#071116; border:1px solid #25343b; }
-  .map .leaflet-tile-pane { filter:hue-rotate(135deg) saturate(1.2) brightness(.74) contrast(1.12); }
+  .route-card { padding:0; overflow:hidden; }
+  .map { height:230px; overflow:hidden; background:#071116; }
+  .map .leaflet-tile-pane { filter:hue-rotate(135deg) saturate(1.35) brightness(.72) contrast(1.18); }
   .map .leaflet-control-attribution { background:rgba(4,10,13,.78); color:#647680; font-size:9px; } .map .leaflet-control-attribution a { color:#88a4af; }
   .map .leaflet-tooltip { background:rgba(7,17,22,.94); color:var(--txt); border:1px solid #34505b; border-radius:2px; box-shadow:none; font-size:12px; font-weight:600; }
   .map .leaflet-tooltip::before { display:none; }
@@ -139,11 +144,12 @@
   #hist table { width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; } #hist th, #hist td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--line); } #hist th { color:var(--mut); font-weight:500; }
   .legend { display:flex; gap:16px; font-size:13px; color:var(--mut); } .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:6px; }
 
-  @media (max-width:1100px) { .conn { grid-template-columns:200px 1fr; } .conn table { grid-column:1 / -1; } .cols { grid-template-columns:1fr 1fr; } }
+  @media (max-width:1100px) { .hero { grid-template-columns:1fr; gap:28px; } .cols { grid-template-columns:1fr 1fr; } }
   @media (max-width:700px) {
     .run { flex-direction:column; align-items:stretch; padding:18px; } .run-btns { flex-direction:row; } .run-btns button { flex:1; }
     .fl { font-size:24px; } .flux-label { height:40px; }
-    .dl-ul, .cols, .two, .q, .conn { grid-template-columns:1fr; } .conn table { grid-column:auto; } .map { height:180px; } .metrics { gap:8px; } .metrics .card { padding:12px; }
+    .hero { padding:24px 0; } .hero h1 { font-size:36px; } .net-summary { grid-template-columns:1fr; } .net-item.wide { grid-column:auto; }
+    .dl-ul, .cols, .two, .q { grid-template-columns:1fr; } .map { height:190px; } .metrics { gap:8px; } .metrics .card { padding:12px; }
     .mid { font-size:24px; } .ud { flex-direction:column; gap:0; font-size:12px; } .when { margin-left:0; } header .hs { display:none; }
     #hist table { font-size:12px; } #hist th:nth-child(5), #hist td:nth-child(5) { display:none; }
   }
@@ -161,8 +167,22 @@
 
 <main>
   <section class="hero">
-    <h1>La velocidad que contrataste, comprobada en 30 segundos.</h1>
-    <p class="lead">Mide tu conexión como lo hace nuestro equipo técnico. Si algo no está bien, compártenos tu código de diagnóstico y lo resolvemos contigo.</p>
+    <div>
+      <span class="eyebrow">4HOME / Herramienta de soporte</span>
+      <h1>Prueba de velocidad<br><span>y diagnóstico de red</span></h1>
+    </div>
+    <div>
+      <div class="net-head"><h2>Tu conexión</h2><span>Información en tiempo real</span></div>
+      <div class="net-summary">
+        <div class="net-item"><span>Conectado vía</span><strong id="i-proto">–</strong></div>
+        <div class="net-item"><span>Servidor</span><strong id="i-server">–</strong></div>
+        <div class="net-item wide"><span>Tu red (ASN)</span><strong id="i-isp">–</strong></div>
+        <div class="net-item"><span>Pool de IP</span><strong id="i-pool">–</strong></div>
+        <div class="net-item"><span>Tu IP</span><strong id="i-ip">–</strong></div>
+        <div class="net-item wide"><span>Ubicación aproximada</span><strong id="i-city">–</strong></div>
+        <div class="net-item"><span>IPv6 disponible</span><strong id="i-v6">–</strong></div>
+      </div>
+    </div>
   </section>
   <section class="card run">
     <div class="flux">
@@ -189,21 +209,10 @@
         <div class="card"><h3>Pérdida <span class="i" title="Solicitudes de latencia sin respuesta en 3 s">i</span></h3><div class="mid" id="loss">–<small>%</small></div><div class="sub" id="loss-sub">de – solicitudes</div></div>
       </div>
     </section>
-    <section class="side">
-      <h2>Tu conexión</h2>
-      <div class="card conn">
-        <div class="gauge" id="gauge"></div>
+    <section class="route">
+      <h2>Ruta de tu conexión</h2>
+      <div class="card route-card">
         <div class="map" id="map" hidden role="img" aria-label="Ubicación del servidor"></div>
-        <table>
-          <tr><td>Conectado vía</td><td id="i-proto">–</td></tr>
-          <tr><td>Servidor</td><td id="i-server">–</td></tr>
-          <tr><td>Tu red (ASN)</td><td id="i-isp">–</td></tr>
-          <tr><td>Pool de IP</td><td id="i-pool">–</td></tr>
-          <tr><td>Tu IP</td><td id="i-ip">–</td></tr>
-          <tr><td>Ubicación aprox.</td><td id="i-city">–</td></tr>
-          <tr><td>IPv6 disponible</td><td id="i-v6">–</td></tr>
-          <tr><td>Plan contratado</td><td><input id="plan" type="number" min="1" placeholder="Mbps (opcional)"></td></tr>
-        </table>
       </div>
     </section>
   </div>
@@ -360,24 +369,6 @@ function box(vals, max, color, unit) {
   return svg(W, H, `<text x="0" y="24" fill="#9aa3ae" font-size="13">${unit}</text>${ticks}${body}`);
 }
 
-function gauge(v, label, up) {
-  const plan = +$('plan').value, el = $('gauge');
-  const mTarget = plan ? niceMax(plan * 1.2) : [100, 250, 500, 1000, 2500, 5000, 10000, 25000].find(m => m >= (v || 0) * 1.1) || 50000;
-  const s = el._s ||= { v: 0, max: mTarget };
-  animate(el, () => {
-    s.v = ease(s.v, v || 0, .12); s.max = ease(s.max, mTarget, .12);
-    const r = 80, c = 2 * Math.PI * r, arc = c * 2 / 3, frac = Math.min(s.v / s.max, 1);
-    const grad = up ? `<stop offset="0" stop-color="#6d4bd8"/><stop offset="1" stop-color="#c4b5fd"/>` : `<stop offset="0" stop-color="#0a6f8a"/><stop offset="1" stop-color="#74e1ff"/>`;
-    el.innerHTML = svg(220, 175, `<defs><linearGradient id="gg" x1="0" y1="1" x2="1" y2="0">${grad}</linearGradient></defs>
-    <circle cx="110" cy="105" r="${r}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${arc} ${c}" transform="rotate(150 110 105)"/>
-    <circle cx="110" cy="105" r="${r}" fill="none" stroke="url(#gg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${arc * frac} ${c}" transform="rotate(150 110 105)"/>
-    <text x="110" y="108" fill="#fff" font-size="36" font-weight="700" text-anchor="middle">${f1(s.v)}</text>
-    <text x="110" y="132" fill="#9aa3ae" font-size="13" text-anchor="middle">Mbps · ${label}</text>
-    <text x="42" y="170" fill="#9aa3ae" font-size="12" text-anchor="middle">0</text><text x="178" y="170" fill="#9aa3ae" font-size="12" text-anchor="middle">${axis(mTarget)}</text>`);
-    return s.v !== (v || 0) || s.max !== mTarget;
-  });
-}
-
 function bars(hist) {
   const W = 1100, H = 180, P = 30, n = hist.length, max = niceMax(Math.max(...hist.flatMap(h => [h.down || 0, h.up || 0]), 1));
   const bw = Math.min(28, (W - P) / n / 2.6), y = v => H - 20 - (v || 0) / max * (H - 36);
@@ -444,7 +435,6 @@ async function phase(kind, tiers, base, span, label) {
       const v = bytes * 8 / (dur * 1e3);
       tier.vals.push(v); pts.push({ t: elapsed(), v }); done++;
       area($('c-' + kind), pts, C[kind]); setNum(kind, pct(pts.map(p => p.v), .9));
-      gauge(v, kind === 'down' ? 'descarga' : 'subida', kind === 'up');
       setFlux(base + span * Math.min(1, Math.max(done / planned, elapsed() / PHASE_MAX_S)), label);
       if (total > 1000) slow = true;
       renderMeasurements();
@@ -506,9 +496,9 @@ function drawMap(srv, me) {
   el._map?.remove();
   const m = el._map = L.map(el, { zoomControl: false, scrollWheelZoom: false });
   m.attributionControl.setPrefix('Leaflet');
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '© OpenStreetMap · © CARTO', subdomains: 'abcd', maxZoom: 20,
-  }).addTo(m);
+  const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_';
+  L.tileLayer(esri + 'Base/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri', maxZoom: 16 }).addTo(m);
+  L.tileLayer(esri + 'Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(m);
   const pin = cls => L.divIcon({ className: '', html: `<div class="pin ${cls}"></div>`, iconSize: [14, 14], iconAnchor: [7, 7] });
   const s = [srv.lat, srv.lon];
   L.marker(s, { icon: pin('') }).addTo(m).bindTooltip(`Servidor · ${esc(srv.city)}`, { permanent: true, direction: 'top', offset: [0, -8] });
@@ -555,13 +545,6 @@ function scores() {
 
 function diagnose() {
   const d = [], add = (lvl, title, txt) => d.push({ lvl, title, txt });
-  const plan = +$('plan').value;
-  if (plan) {
-    const p = R.down / plan * 100;
-    if (p < 50) add('bad', `Descarga al ${p.toFixed(0)}% del plan`, 'Muy por debajo de lo contratado. Si ya probaste por cable, envía este código a soporte.');
-    else if (p < 80) add('warn', `Descarga al ${p.toFixed(0)}% del plan`, 'Por debajo de lo esperado. Repite por cable; en Wi‑Fi es normal perder velocidad.');
-    else add('ok', `Descarga al ${Math.min(p, 100).toFixed(0)}% del plan`, 'La velocidad corresponde a tu plan.');
-  }
   if (R.latency > 60) add('warn', 'Latencia alta', `${f1(R.latency)} ms en reposo. Puede deberse a Wi‑Fi saturado, distancia al router o a la red.`);
   if (R.jitter > 30) add('bad', 'Conexión inestable (jitter alto)', 'Variaciones fuertes de latencia: típico de interferencia Wi‑Fi o problemas en la línea. Afecta llamadas y juegos.');
   if (R.loss > 2) add('bad', `Pérdida de ${f1(R.loss)}%`, 'Solicitudes sin respuesta durante la prueba. Puede indicar problemas en la línea o saturación severa.');
@@ -602,7 +585,7 @@ function reportText() {
     `Descarga: ${f1(R.down)} Mbps | Subida: ${f1(R.up)} Mbps`,
     `Latencia: ${f1(R.latency)} ms (↓${f1(R.latDown)} ↑${f1(R.latUp)}) | Jitter: ${f1(R.jitter)} ms | Pérdida: ${f1(R.loss)}%`,
     `IP: ${R.publicIp || '–'} | Pool: ${R.prefix || '–'} | Red: ${R.isp || '–'}${R.asn ? ' AS' + R.asn : ''} | IPv6: ${R.ipv6 ? 'sí' : 'no'} | Conexión: ${R.conn?.type || '?'}`,
-    `Plan: ${R.plan ? R.plan + ' Mbps' : 'no indicado'} | Puertos abiertos: ${(R.ports || []).filter(p => p.state === 'abierto').map(p => p.port).join(', ') || 'ninguno'}`,
+    `Puertos abiertos: ${(R.ports || []).filter(p => p.state === 'abierto').map(p => p.port).join(', ') || 'ninguno'}`,
     '', 'Diagnóstico:', ...(R.diag || []).map(x => `- ${x.title}: ${x.txt}`)].join('\n');
 }
 
@@ -613,7 +596,7 @@ function resetView() {
   ['lat-d', 'lat-u', 'jit-d', 'jit-u'].forEach(id => $(id).textContent = '–');
   $('loss-sub').textContent = 'de – solicitudes';
   $('ports').innerHTML = portCards(PORT_LIST.map(([port, name]) => ({ port, name })));
-  renderMeasurements(); gauge(0, 'listo');
+  renderMeasurements();
 }
 
 async function run() {
@@ -644,11 +627,10 @@ async function run() {
     R.latUp = median(R.upLoaded); $('lat-u').textContent = f1(R.latUp) + ' ms'; $('jit-u').textContent = f1(jitter(R.upLoaded)) + ' ms';
 
     R.loss = R.pings ? R.lost / R.pings * 100 : 0; setNum('loss', R.loss); $('loss-sub').textContent = `de ${R.pings} solicitudes`;
-    renderMeasurements(); gauge(R.down, 'descarga');
+    renderMeasurements();
 
     setFlux(91, 'revisando puertos'); status('Revisando puertos de tu IP pública desde nuestro servidor…'); await portScan();
     setFlux(97, 'generando diagnóstico');
-    R.plan = +$('plan').value || null;
     scores(); diagnose();
 
     const res = await fetch('/api/result', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(R) }).then(r => r.json()).catch(() => ({}));

@@ -42,7 +42,6 @@
   .card { background:var(--card); border:1px solid #1e2429; border-top-color:#2a3238; border-radius:var(--r); padding:18px 20px; }
   .block { margin-bottom:36px; }
   .hero { padding:28px 0 26px; max-width:760px; }
-  .kicker { margin:0 0 8px; color:var(--down); font-size:13px; font-weight:600; }
   .hero h1 { margin:0; font-size:clamp(28px, 4vw, 44px); line-height:1.1; letter-spacing:-.8px; font-weight:700; text-wrap:balance; }
   .lead { margin:12px 0 0; color:var(--mut); font-size:16px; max-width:620px; }
 
@@ -156,7 +155,6 @@
 
 <main>
   <section class="hero">
-    <p class="kicker">4HOME Internet</p>
     <h1>La velocidad que contrataste, comprobada en 30 segundos.</h1>
     <p class="lead">Mide tu conexión como lo hace nuestro equipo técnico. Si algo no está bien, compártenos tu código de diagnóstico y lo resolvemos contigo.</p>
   </section>
@@ -269,7 +267,11 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&l
 const size = b => b >= 1e6 ? b / 1e6 + ' MB' : b / 1e3 + ' kB';
 const niceMax = v => { const p = 10 ** Math.floor(Math.log10(v || 1)); return [1, 2, 2.5, 5, 10].map(m => m * p).find(m => m >= v); };
 const axis = v => v >= 1000 ? +(v / 1000).toFixed(1) + 'G' : +v.toFixed(1) + '';
-const setNum = (id, v) => $(id).firstChild.textContent = f1(v);
+const setNum = (id, v) => {
+  const el = $(id), s = el._s ||= { v: 0 };
+  if (!Number.isFinite(v)) { el._frame = () => false; s.v = 0; el.firstChild.textContent = f1(v); return; }
+  animate(el, () => { s.v = ease(s.v, v, .15); el.firstChild.textContent = f1(s.v); return s.v !== v; });
+};
 const status = t => $('status').textContent = t;
 const svg = (w, h, inner) => `<svg viewBox="0 0 ${w} ${h}" width="100%" style="display:block">${inner}</svg>`;
 const C = { down: '#74e1ff', up: '#a78bfa', lat: '#f5a524' };
@@ -301,19 +303,41 @@ function setFlux(p, label = flux.label) {
 }
 
 // ---------- charts ----------
+// Each chart eases toward its latest data every frame, so new samples glide in instead of jumping.
+const CALM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ease = (a, b, k = .14) => CALM || Math.abs(b - a) <= Math.abs(b) * 1e-3 + 1e-3 ? b : a + (b - a) * k;
+function animate(el, frame) {
+  el._frame = frame;
+  if (!el._raf) el._raf = requestAnimationFrame(function tick() { el._raf = el._frame() ? requestAnimationFrame(tick) : 0; });
+}
+
 function area(el, pts, color) {
-  if (!pts.length) { el.innerHTML = '<div class="ph">La gráfica aparece durante la prueba</div>'; return; }
-  const W = Math.max(el.clientWidth, 200), H = Math.max(el.clientHeight, 150), P = 6;
-  const tMax = Math.max(pts.at(-1).t, .001), vMax = Math.max(...pts.map(p => p.v)) * 1.15;
-  const x = t => P + t / tMax * (W - 2 * P), y = v => H - P - v / vMax * (H - 2 * P);
-  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join('');
-  const p90 = y(pct(pts.map(p => p.v), .9)), id = 'g' + color.slice(1);
-  el.innerHTML = svg(W, H, `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".5"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
-    <path d="${line}L${x(pts.at(-1).t)},${H}L${x(pts[0].t)},${H}Z" fill="url(#${id})"/>
+  if (!pts.length) { cancelAnimationFrame(el._raf); el._raf = 0; el._s = null; el.innerHTML = '<div class="ph">La gráfica aparece durante la prueba</div>'; return; }
+  const vTarget = Math.max(...pts.map(p => p.v)) * 1.15, p90Target = pct(pts.map(p => p.v), .9);
+  const s = el._s ||= { n: 1, vMax: vTarget, p90: p90Target };
+  animate(el, () => {
+    s.n = ease(s.n, pts.length, .1); s.vMax = ease(s.vMax, vTarget, .1); s.p90 = ease(s.p90, p90Target, .1);
+    const k = Math.floor(s.n), f = s.n - k, shown = pts.slice(0, k);
+    if (f > 0 && pts[k]) { const a = pts[k - 1], b = pts[k]; shown.push({ t: a.t + (b.t - a.t) * f, v: a.v + (b.v - a.v) * f }); }
+    const W = Math.max(el.clientWidth, 200), H = Math.max(el.clientHeight, 150), P = 6;
+    const tMax = Math.max(shown.at(-1).t, .001);
+    const x = t => P + t / tMax * (W - 2 * P), y = v => H - P - v / s.vMax * (H - 2 * P);
+    const line = shown.map((p, i) => {
+      const X = x(p.t).toFixed(1), Y = y(p.v).toFixed(1);
+      if (!i) return `M${X},${Y}`;
+      const mx = ((x(shown[i - 1].t) + x(p.t)) / 2).toFixed(1);
+      return `C${mx},${y(shown[i - 1].v).toFixed(1)} ${mx},${Y} ${X},${Y}`;
+    }).join('');
+    const head = shown.at(-1), p90 = y(s.p90), id = 'g' + color.slice(1);
+    el.innerHTML = svg(W, H, `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".5"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${line}L${x(head.t)},${H}L${x(shown[0].t)},${H}Z" fill="url(#${id})"/>
     <path d="${line}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round"/>
-    ${pts.map(p => `<circle cx="${x(p.t)}" cy="${y(p.v)}" r="2.6" fill="${color}"/>`).join('')}
+    ${shown.slice(0, k).map(p => `<circle cx="${x(p.t)}" cy="${y(p.v)}" r="2.2" fill="${color}" opacity=".7"/>`).join('')}
+    <circle cx="${x(head.t)}" cy="${y(head.v)}" r="7" fill="${color}" opacity=".25"/><circle cx="${x(head.t)}" cy="${y(head.v)}" r="3.4" fill="${color}"/>
     <line x1="0" x2="${W}" y1="${p90}" y2="${p90}" stroke="rgba(255,255,255,.35)" stroke-dasharray="5 5"/>
     <text x="4" y="${p90 - 7}" fill="rgba(255,255,255,.75)" font-size="12">Percentil 90</text>`);
+    return s.n !== pts.length || s.vMax !== vTarget || s.p90 !== p90Target;
+  });
 }
 
 function box(vals, max, color, unit) {
@@ -330,16 +354,21 @@ function box(vals, max, color, unit) {
 }
 
 function gauge(v, label, up) {
-  const plan = +$('plan').value;
-  const max = plan ? niceMax(plan * 1.2) : [100, 250, 500, 1000, 2500, 5000, 10000, 25000].find(m => m >= (v || 0) * 1.1) || 50000;
-  const r = 80, c = 2 * Math.PI * r, arc = c * 2 / 3, frac = Math.min((v || 0) / max, 1);
-  const grad = up ? `<stop offset="0" stop-color="#6d4bd8"/><stop offset="1" stop-color="#c4b5fd"/>` : `<stop offset="0" stop-color="#0a6f8a"/><stop offset="1" stop-color="#74e1ff"/>`;
-  $('gauge').innerHTML = svg(220, 175, `<defs><linearGradient id="gg" x1="0" y1="1" x2="1" y2="0">${grad}</linearGradient></defs>
+  const plan = +$('plan').value, el = $('gauge');
+  const mTarget = plan ? niceMax(plan * 1.2) : [100, 250, 500, 1000, 2500, 5000, 10000, 25000].find(m => m >= (v || 0) * 1.1) || 50000;
+  const s = el._s ||= { v: 0, max: mTarget };
+  animate(el, () => {
+    s.v = ease(s.v, v || 0, .12); s.max = ease(s.max, mTarget, .12);
+    const r = 80, c = 2 * Math.PI * r, arc = c * 2 / 3, frac = Math.min(s.v / s.max, 1);
+    const grad = up ? `<stop offset="0" stop-color="#6d4bd8"/><stop offset="1" stop-color="#c4b5fd"/>` : `<stop offset="0" stop-color="#0a6f8a"/><stop offset="1" stop-color="#74e1ff"/>`;
+    el.innerHTML = svg(220, 175, `<defs><linearGradient id="gg" x1="0" y1="1" x2="1" y2="0">${grad}</linearGradient></defs>
     <circle cx="110" cy="105" r="${r}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${arc} ${c}" transform="rotate(150 110 105)"/>
     <circle cx="110" cy="105" r="${r}" fill="none" stroke="url(#gg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${arc * frac} ${c}" transform="rotate(150 110 105)"/>
-    <text x="110" y="108" fill="#fff" font-size="36" font-weight="700" text-anchor="middle">${f1(v)}</text>
+    <text x="110" y="108" fill="#fff" font-size="36" font-weight="700" text-anchor="middle">${f1(s.v)}</text>
     <text x="110" y="132" fill="#9aa3ae" font-size="13" text-anchor="middle">Mbps · ${label}</text>
-    <text x="42" y="170" fill="#9aa3ae" font-size="12" text-anchor="middle">0</text><text x="178" y="170" fill="#9aa3ae" font-size="12" text-anchor="middle">${axis(max)}</text>`);
+    <text x="42" y="170" fill="#9aa3ae" font-size="12" text-anchor="middle">0</text><text x="178" y="170" fill="#9aa3ae" font-size="12" text-anchor="middle">${axis(mTarget)}</text>`);
+    return s.v !== (v || 0) || s.max !== mTarget;
+  });
 }
 
 function bars(hist) {

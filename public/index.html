@@ -43,18 +43,11 @@
   .i { color:var(--mut); font-size:11px; cursor:help; border:1px solid var(--mut); border-radius:50%; width:15px; height:15px; display:inline-grid; place-items:center; margin-left:5px; vertical-align:1px; text-transform:none; }
   .card { background:var(--card); border:1px solid #1e2429; border-top-color:#2a3238; border-radius:var(--r); padding:18px 20px; }
   .block { margin-bottom:36px; }
-  .hero { padding:32px 0 28px; display:grid; grid-template-columns:minmax(320px,.8fr) minmax(560px,1.2fr); gap:64px; align-items:end; border-bottom:1px solid var(--line); margin-bottom:28px; }
-  .eyebrow { display:block; margin-bottom:10px; color:var(--mut); font:600 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing:.15em; text-transform:uppercase; }
-  .hero h1 { margin:0; font-size:clamp(34px, 4vw, 52px); line-height:.98; letter-spacing:-1.8px; font-weight:650; }
-  .hero h1 span { color:var(--down); font-weight:450; }
-  .net-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; }
-  .net-head h2 { margin:0; font-size:14px; }
-  .net-head span { color:var(--mut); font:500 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing:.12em; text-transform:uppercase; }
-  .net-summary { display:grid; grid-template-columns:1fr 1fr; column-gap:24px; border-top:1px solid #2a343a; }
-  .net-item { min-width:0; padding:8px 0 9px; border-bottom:1px solid var(--line); }
-  .net-item.wide { grid-column:1 / -1; }
-  .net-item span { display:block; margin-bottom:2px; color:var(--mut); font-size:11px; }
-  .net-item strong { display:block; color:var(--txt); font-size:13px; font-weight:600; overflow-wrap:anywhere; }
+  .net-status { display:block; margin:-8px 0 10px; color:var(--mut); font:500 10px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing:.1em; text-transform:uppercase; }
+  .net-summary { border-top:1px solid #2a343a; }
+  .net-item { min-width:0; display:grid; grid-template-columns:118px minmax(0,1fr); gap:12px; padding:9px 0; border-bottom:1px solid var(--line); }
+  .net-item span { color:var(--mut); font-size:12px; }
+  .net-item strong { color:var(--txt); font-size:13px; font-weight:600; overflow-wrap:anywhere; }
 
   /* Progressive flux loader (vanilla port) */
   .run { display:flex; gap:28px; align-items:center; margin-bottom:28px; padding:22px 26px; }
@@ -83,14 +76,16 @@
   button.pri:hover:not(:disabled) { color:#001318; background:#28bad7; border-color:#8beaff; }
   button svg { width:16px; height:16px; vertical-align:-3px; margin-right:6px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 
-  .top { display:grid; gap:28px; margin-bottom:24px; }
-  .dl-ul { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .top { display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:24px; align-items:start; margin-bottom:28px; }
+  .top.waiting { grid-template-columns:1fr; }
+  .top.waiting .net-summary { display:grid; grid-template-columns:1fr 1fr; column-gap:24px; }
+  .dl-ul { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
   .num { font-size:clamp(40px, 4.4vw, 58px); font-weight:700; line-height:1.1; font-variant-numeric:tabular-nums; letter-spacing:-1px; margin-top:4px; }
   .num small, .mid small { font-size:18px; font-weight:600; letter-spacing:0; margin-left:4px; color:var(--mut); }
   .dl-ul > .card { display:flex; flex-direction:column; }
   .chart { margin-top:10px; min-height:170px; display:grid; }
   .ph { place-self:center; color:var(--mut); font-size:13px; border:1px dashed var(--line); border-radius:4px; width:100%; height:100%; display:grid; place-items:center; }
-  .metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:16px; }
+  .metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px; margin-top:16px; }
   .mid { font-size:32px; font-weight:700; font-variant-numeric:tabular-nums; margin:2px 0; }
   .ud { display:flex; gap:16px; font-size:14px; font-variant-numeric:tabular-nums; } .ud b { color:var(--mut); font-weight:400; }
   .sub { color:var(--mut); font-size:13px; }
@@ -143,17 +138,19 @@
   .dev table { width:100%; border-collapse:collapse; } .dev td { padding:6px 0; font-size:14px; border-bottom:1px solid var(--line); } .dev tr:last-child td { border:0; } .dev td:first-child { color:var(--mut); width:45%; }
   #hist table { width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; } #hist th, #hist td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--line); } #hist th { color:var(--mut); font-weight:500; }
   .legend { display:flex; gap:16px; font-size:13px; color:var(--mut); } .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:6px; }
+  #results, .reveal-panel { animation:results-in .45s var(--ease) both; }
+  @keyframes results-in { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
 
-  @media (max-width:1100px) { .hero { grid-template-columns:1fr; gap:28px; } .cols { grid-template-columns:1fr 1fr; } }
+  @media (max-width:1100px) { .top { grid-template-columns:1fr; } .net-summary { display:grid; grid-template-columns:1fr 1fr; column-gap:24px; } .cols { grid-template-columns:1fr 1fr; } }
   @media (max-width:700px) {
     .run { flex-direction:column; align-items:stretch; padding:18px; } .run-btns { flex-direction:row; } .run-btns button { flex:1; }
     .fl { font-size:24px; } .flux-label { height:40px; }
-    .hero { padding:24px 0; } .hero h1 { font-size:36px; } .net-summary { grid-template-columns:1fr; } .net-item.wide { grid-column:auto; }
+    .net-summary { grid-template-columns:1fr; }
     .dl-ul, .cols, .two, .q { grid-template-columns:1fr; } .map { height:190px; } .metrics { gap:8px; } .metrics .card { padding:12px; }
     .mid { font-size:24px; } .ud { flex-direction:column; gap:0; font-size:12px; } .when { margin-left:0; } header .hs { display:none; }
     #hist table { font-size:12px; } #hist th:nth-child(5), #hist td:nth-child(5) { display:none; }
   }
-  @media (prefers-reduced-motion:reduce) { .fl, .fl span, .flux-sheen { animation:none !important; } .flux-fill { transition:none; } }
+  @media (prefers-reduced-motion:reduce) { .fl, .fl span, .flux-sheen, #results, .reveal-panel { animation:none !important; } .flux-fill { transition:none; } }
   @media print { .bg, .bar, .run { display:none; } body, html { background:#fff; color:#000; } .card { background:#fff; border-color:#ccc; } }
 </style>
 </head>
@@ -166,24 +163,6 @@
 <header><img src="/logo.svg" alt="4HOME"><b>Speed Test</b><div class="sp"></div><span class="hs">Velocidad y diagnóstico de tu conexión</span></header>
 
 <main>
-  <section class="hero">
-    <div>
-      <span class="eyebrow">4HOME / Herramienta de soporte</span>
-      <h1>Prueba de velocidad<br><span>y diagnóstico de red</span></h1>
-    </div>
-    <div>
-      <div class="net-head"><h2>Tu conexión</h2><span>Información en tiempo real</span></div>
-      <div class="net-summary">
-        <div class="net-item"><span>Conectado vía</span><strong id="i-proto">–</strong></div>
-        <div class="net-item"><span>Servidor</span><strong id="i-server">–</strong></div>
-        <div class="net-item wide"><span>Tu red (ASN)</span><strong id="i-isp">–</strong></div>
-        <div class="net-item"><span>Pool de IP</span><strong id="i-pool">–</strong></div>
-        <div class="net-item"><span>Tu IP</span><strong id="i-ip">–</strong></div>
-        <div class="net-item wide"><span>Ubicación aproximada</span><strong id="i-city">–</strong></div>
-        <div class="net-item"><span>IPv6 disponible</span><strong id="i-v6">–</strong></div>
-      </div>
-    </div>
-  </section>
   <section class="card run">
     <div class="flux">
       <div class="flux-label" id="flux-label" aria-hidden="true"></div>
@@ -196,26 +175,42 @@
     </div>
   </section>
 
-  <div class="top">
-    <section class="speed">
+  <div class="top waiting" id="top-results">
+    <section class="speed" id="speed" hidden>
       <h2>Tu velocidad de Internet</h2>
       <div class="dl-ul">
-        <div class="card"><h3>Descarga <span class="i" title="Percentil 90 de las mediciones de descarga">i</span></h3><div class="num" id="down">–<small>Mbps</small></div><div class="chart" id="c-down"></div></div>
-        <div class="card"><h3>Subida <span class="i" title="Percentil 90 de las mediciones de subida">i</span></h3><div class="num" id="up">–<small>Mbps</small></div><div class="chart" id="c-up"></div></div>
+        <div class="card reveal-panel" id="panel-down" hidden><h3>Descarga <span class="i" title="Percentil 90 de las mediciones de descarga">i</span></h3><div class="num" id="down">–<small>Mbps</small></div><div class="chart" id="c-down"></div></div>
+        <div class="card reveal-panel" id="panel-up" hidden><h3>Subida <span class="i" title="Percentil 90 de las mediciones de subida">i</span></h3><div class="num" id="up">–<small>Mbps</small></div><div class="chart" id="c-up"></div></div>
       </div>
       <div class="metrics">
-        <div class="card"><h3>Latencia <span class="i" title="Mediana del tiempo de ida y vuelta sin carga. Flechas: durante descarga / subida">i</span></h3><div class="mid" id="lat">–<small>ms</small></div><div class="ud"><span><b>↓</b> <span id="lat-d">–</span></span><span><b>↑</b> <span id="lat-u">–</span></span></div></div>
-        <div class="card"><h3>Jitter <span class="i" title="Variación promedio entre latencias consecutivas">i</span></h3><div class="mid" id="jit">–<small>ms</small></div><div class="ud"><span><b>↓</b> <span id="jit-d">–</span></span><span><b>↑</b> <span id="jit-u">–</span></span></div></div>
-        <div class="card"><h3>Pérdida <span class="i" title="Solicitudes de latencia sin respuesta en 3 s">i</span></h3><div class="mid" id="loss">–<small>%</small></div><div class="sub" id="loss-sub">de – solicitudes</div></div>
+        <div class="card reveal-panel" id="panel-lat" hidden><h3>Latencia <span class="i" title="Mediana del tiempo de ida y vuelta sin carga. Flechas: durante descarga / subida">i</span></h3><div class="mid" id="lat">–<small>ms</small></div><div class="ud"><span><b>↓</b> <span id="lat-d">–</span></span><span><b>↑</b> <span id="lat-u">–</span></span></div></div>
+        <div class="card reveal-panel" id="panel-jit" hidden><h3>Jitter <span class="i" title="Variación promedio entre latencias consecutivas">i</span></h3><div class="mid" id="jit">–<small>ms</small></div><div class="ud"><span><b>↓</b> <span id="jit-d">–</span></span><span><b>↑</b> <span id="jit-u">–</span></span></div></div>
+        <div class="card reveal-panel" id="panel-loss" hidden><h3>Pérdida <span class="i" title="Solicitudes de latencia sin respuesta en 3 s">i</span></h3><div class="mid" id="loss">–<small>%</small></div><div class="sub" id="loss-sub">de – solicitudes</div></div>
       </div>
     </section>
-    <section class="route">
-      <h2>Ruta de tu conexión</h2>
-      <div class="card route-card">
-        <div class="map" id="map" hidden role="img" aria-label="Ubicación del servidor"></div>
+    <section class="side">
+      <h2>Tu conexión</h2>
+      <div class="card">
+        <span class="net-status">Información en tiempo real</span>
+        <div class="net-summary">
+          <div class="net-item"><span>Conectado vía</span><strong id="i-proto">–</strong></div>
+          <div class="net-item"><span>Servidor</span><strong id="i-server">–</strong></div>
+          <div class="net-item"><span>Tu red (ASN)</span><strong id="i-isp">–</strong></div>
+          <div class="net-item"><span>Pool de IP</span><strong id="i-pool">–</strong></div>
+          <div class="net-item"><span>Tu IP</span><strong id="i-ip">–</strong></div>
+          <div class="net-item"><span>Ubicación aprox.</span><strong id="i-city">–</strong></div>
+          <div class="net-item"><span>IPv6 disponible</span><strong id="i-v6">–</strong></div>
+        </div>
       </div>
     </section>
   </div>
+
+  <section class="route block">
+    <h2>Ruta de tu conexión</h2>
+    <div class="card route-card">
+      <div class="map" id="map" hidden role="img" aria-label="Ubicación del servidor"></div>
+    </div>
+  </section>
 
   <div class="bar">
     <button id="cmp"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Comparar</button>
@@ -226,6 +221,7 @@
     <div class="when" id="when">Aún no hay mediciones.</div>
   </div>
 
+  <div id="results" hidden>
   <section class="block">
     <h2>Calidad de la red <span class="i" title="Calificación según velocidad, latencia, jitter y pérdida">i</span></h2>
     <div class="q">
@@ -260,6 +256,7 @@
       </div>
     </section>
   </div>
+  </div>
 
   <section id="hist" style="display:none">
     <h2>Historial en este dispositivo</h2>
@@ -292,6 +289,19 @@ const status = t => $('status').textContent = t;
 const svg = (w, h, inner) => `<svg viewBox="0 0 ${w} ${h}" width="100%" style="display:block">${inner}</svg>`;
 const C = { down: '#74e1ff', up: '#a78bfa', lat: '#f5a524' };
 const link = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${esc(text)}</a>`;
+const SPEED_PANELS = ['panel-down', 'panel-up', 'panel-lat', 'panel-jit', 'panel-loss'];
+
+function resetProgressiveResults() {
+  $('speed').hidden = true;
+  $('top-results').classList.add('waiting');
+  SPEED_PANELS.forEach(id => $(id).hidden = true);
+}
+
+function revealPanels(...ids) {
+  $('speed').hidden = false;
+  $('top-results').classList.remove('waiting');
+  ids.forEach(id => $(id).hidden = false);
+}
 
 const DOWN = [[1e5, 10], [1e6, 8], [1e7, 6], [2.5e7, 4], [1e8, 3]];
 const UP = [[1e5, 8], [1e6, 6], [1e7, 4], [2.5e7, 4], [5e7, 3]];
@@ -602,30 +612,36 @@ function resetView() {
 async function run() {
   R = { at: new Date().toISOString(), pings: 0, lost: 0 };
   const btns = ['wa', 'dl', 'copy', 'print'];
+  $('results').hidden = true;
+  resetProgressiveResults();
   $('go').disabled = true; $('pause').disabled = false; btns.forEach(b => $(b).disabled = true);
   $('code').textContent = '— — — —'; $('when').textContent = 'Midiendo…';
   resetView();
   try {
     setFlux(2, 'conectando'); status('Obteniendo información de red…'); deviceInfo(); await netInfo();
 
+    revealPanels('panel-lat', 'panel-jit');
     setFlux(5, 'midiendo latencia'); status('Midiendo latencia sin carga…');
     R.latVals = [];
     for (let i = 0; i < 20; i++) {
       await gate(); R.pings++;
       try { R.latVals.push(await ping()); } catch { R.lost++; }
-      setNum('lat', median(R.latVals)); setFlux(5 + i / 19 * 10);
+      setNum('lat', median(R.latVals)); setNum('jit', jitter(R.latVals)); setFlux(5 + i / 19 * 10);
     }
     R.latency = median(R.latVals); R.latencyMin = R.latVals.length ? Math.min(...R.latVals) : 0; R.jitter = jitter(R.latVals);
     setNum('jit', R.jitter); renderMeasurements();
 
+    revealPanels('panel-down');
     status('Descargando archivos de prueba de 100 kB a 100 MB…');
     await phase('down', DOWN, 15, 40, 'midiendo descarga');
     R.latDown = median(R.downLoaded); $('lat-d').textContent = f1(R.latDown) + ' ms'; $('jit-d').textContent = f1(jitter(R.downLoaded)) + ' ms';
 
+    revealPanels('panel-up');
     status('Subiendo archivos de prueba de 100 kB a 50 MB…');
     await phase('up', UP, 55, 35, 'midiendo subida');
     R.latUp = median(R.upLoaded); $('lat-u').textContent = f1(R.latUp) + ' ms'; $('jit-u').textContent = f1(jitter(R.upLoaded)) + ' ms';
 
+    revealPanels('panel-loss');
     R.loss = R.pings ? R.lost / R.pings * 100 : 0; setNum('loss', R.loss); $('loss-sub').textContent = `de ${R.pings} solicitudes`;
     renderMeasurements();
 
@@ -637,6 +653,7 @@ async function run() {
     R.id = res.id; $('code').textContent = R.id || 'no guardado';
     saveHist(); renderHist();
     $('when').textContent = 'Medido a las ' + new Date().toLocaleTimeString();
+    $('results').hidden = false;
     setFlux(100, 'prueba completada');
     if (R.ports) status('Listo. Revisa el diagnóstico abajo o compártelo con soporte.');
     btns.forEach(b => $(b).disabled = false);
@@ -666,6 +683,7 @@ $('dl').onclick = () => {
 };
 
 resetView();
+resetProgressiveResults();
 deviceInfo();
 renderHist();
 setFlux(0, 'listo para medir');

@@ -3,14 +3,25 @@ const net = require('net');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const os = require('os');
 
 const PORT = process.env.PORT || 3000;
 const TRUST_PROXY = process.env.TRUST_PROXY === '1';
 const RESULTS = process.env.RESULTS_PATH || path.join(__dirname, 'results.jsonl');
 const INDEX = fs.readFileSync(path.join(__dirname, 'public/index.html'));
 const LOGO = fs.readFileSync(path.join(__dirname, 'public/logo.svg'));
-const SERVER_NAME = process.env.SERVER_NAME || os.hostname();
+// Where this server actually runs (egress IP geolocation), shown as "<city> · 4HOME" and on the map.
+let serverLoc = null;
+async function whereAmI() {
+  if (serverLoc) return serverLoc;
+  try {
+    const r = await fetch('https://ipinfo.io/json', { signal: AbortSignal.timeout(3000) }).then(r => r.json());
+    const [lat, lon] = (r.loc || '').split(',').map(Number);
+    if (r.city && Number.isFinite(lat)) serverLoc = { city: r.city, region: r.region, country: r.country, lat, lon };
+  } catch {}
+  return serverLoc; // null → retried on the next request
+}
+whereAmI();
+const serverName = () => serverLoc ? `${serverLoc.city} · 4HOME` : '4HOME';
 const CHUNK = crypto.randomBytes(1 << 20); // random = incompressible
 const MAX_DOWN = 100 << 20, MAX_UP = 100 << 20;
 
@@ -73,7 +84,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (url.pathname === '/healthz') {
-      return json(res, 200, { ok: true, server: SERVER_NAME });
+      return json(res, 200, { ok: true, server: serverName() });
     }
 
     if (url.pathname === '/__down') {
@@ -98,7 +109,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (url.pathname === '/api/ip') {
-      return json(res, 200, { ip, v6: ip.includes(':'), server: SERVER_NAME });
+      const loc = await whereAmI();
+      return json(res, 200, { ip, v6: ip.includes(':'), server: serverName(), serverLoc: loc });
     }
 
     if (url.pathname === '/api/ports') {

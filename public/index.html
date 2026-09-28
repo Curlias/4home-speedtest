@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>4HOME Speed Test</title>
 <link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
 <style>
   :root {
     --flux-from:#0a6f8a; --flux-mid:#1aa3c4; --flux-to:#74e1ff;
@@ -94,6 +96,13 @@
   input { font:inherit; background:rgba(255,255,255,.05); border:1px solid var(--line); color:var(--txt); border-radius:8px; padding:6px 10px; width:100%; }
   .gauge { max-width:240px; width:100%; margin:0 auto 8px; }
   .gauge text { font-variant-numeric:tabular-nums; }
+  .map { height:200px; border-radius:10px; overflow:hidden; margin:4px 0 12px; background:#0b0e11; border:1px solid var(--line); }
+  .map .leaflet-control-attribution { background:rgba(0,0,0,.55); color:#6b7480; font-size:9px; } .map .leaflet-control-attribution a { color:#8a94a0; }
+  .map .leaflet-tooltip { background:rgba(13,16,19,.92); color:var(--txt); border:1px solid var(--line); box-shadow:none; font-size:12px; font-weight:600; }
+  .map .leaflet-tooltip::before { display:none; }
+  .pin { width:14px; height:14px; border-radius:50%; background:var(--down); box-shadow:0 0 0 0 rgba(116,225,255,.6); animation:pin 1.8s infinite; }
+  .pin.me { background:var(--lat); animation:none; box-shadow:0 0 0 4px rgba(245,165,36,.25); }
+  @keyframes pin { to { box-shadow:0 0 0 14px rgba(116,225,255,0); } }
 
   .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:36px; }
   .when { margin-left:auto; color:var(--mut); font-size:14px; }
@@ -187,6 +196,7 @@
       <h2>Tu conexión</h2>
       <div class="card conn">
         <div class="gauge" id="gauge"></div>
+        <div class="map" id="map" hidden role="img" aria-label="Ubicación del servidor"></div>
         <table>
           <tr><td>Conectado vía</td><td id="i-proto">–</td></tr>
           <tr><td>Servidor</td><td id="i-server">–</td></tr>
@@ -488,6 +498,28 @@ async function netInfo() {
   $('i-ip').innerHTML = R.publicIp ? link(`https://ipinfo.io/${R.publicIp}`, R.publicIp) : '–';
   $('i-city').textContent = R.city || '–';
   $('i-v6').textContent = R.ipv6 == null ? '–' : R.ipv6 ? 'Sí' : 'No';
+  const [lat, lon] = (info.loc || '').split(',').map(Number);
+  drawMap(me.serverLoc, Number.isFinite(lat) ? { lat, lon, city: info.city } : null);
+}
+
+function drawMap(srv, me) {
+  const el = $('map');
+  if (!srv || !window.L) { el.hidden = true; return; }
+  el.hidden = false;
+  el._map?.remove();
+  const m = el._map = L.map(el, { zoomControl: false, scrollWheelZoom: false });
+  m.attributionControl.setPrefix('Leaflet');
+  const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_';
+  L.tileLayer(esri + 'Base/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri', maxZoom: 16 }).addTo(m);
+  L.tileLayer(esri + 'Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(m);
+  const pin = cls => L.divIcon({ className: '', html: `<div class="pin ${cls}"></div>`, iconSize: [14, 14], iconAnchor: [7, 7] });
+  const s = [srv.lat, srv.lon];
+  L.marker(s, { icon: pin('') }).addTo(m).bindTooltip(`Servidor · ${esc(srv.city)}`, { permanent: true, direction: 'top', offset: [0, -8] });
+  if (!me) return m.setView(s, 6);
+  const c = [me.lat, me.lon];
+  L.marker(c, { icon: pin('me') }).addTo(m).bindTooltip(`Tú${me.city ? ' · ' + esc(me.city) : ''}`, { permanent: true, direction: 'bottom', offset: [0, 8] });
+  L.polyline([c, s], { color: '#74e1ff', weight: 1.5, opacity: .7, dashArray: '4 6' }).addTo(m);
+  m.fitBounds([c, s], { padding: [40, 40], maxZoom: 9 });
 }
 
 function deviceInfo() {

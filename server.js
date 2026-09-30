@@ -78,6 +78,11 @@ const server = http.createServer(async (req, res) => {
       return res.end(INDEX);
     }
 
+    if (url.pathname.startsWith('/fonts/')) {
+      const f = path.join(__dirname, 'public/fonts', path.basename(url.pathname));
+      if (fs.existsSync(f)) { res.writeHead(200, { 'Content-Type': 'font/' + path.extname(f).slice(1), 'Cache-Control': 'max-age=604800' }); return res.end(fs.readFileSync(f)); }
+    }
+
     if (url.pathname === '/logo.svg') {
       res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'max-age=86400' });
       return res.end(LOGO);

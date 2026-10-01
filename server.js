@@ -130,10 +130,18 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/result' && req.method === 'POST') {
       const data = JSON.parse(await readBody(req, 64 << 10));
       const id = crypto.randomBytes(4).toString('hex').toUpperCase();
-      const rec = { id, at: new Date().toISOString(), ip, ua: req.headers['user-agent'], data };
+      const session = /^[A-Za-z0-9_-]{16,40}$/.test(data.session) ? data.session : undefined;
+      const rec = { id, at: new Date().toISOString(), ip, ua: req.headers['user-agent'], session, data };
       ensureResultsDir();
       fs.appendFileSync(RESULTS, JSON.stringify(rec) + '\n');
       return json(res, 200, { id });
+    }
+
+    const sm = url.pathname.match(/^\/api\/session\/([A-Za-z0-9_-]{16,40})$/);
+    if (sm) {
+      // ponytail: same linear scan as /api/result
+      const list = fs.existsSync(RESULTS) ? fs.readFileSync(RESULTS, 'utf8').split('\n').filter(l => l.includes(`"session":"${sm[1]}"`)).map(l => JSON.parse(l)) : [];
+      return json(res, 200, { results: list });
     }
 
     const m = url.pathname.match(/^\/api\/result\/([0-9A-F]{8})$/);

@@ -6,6 +6,8 @@ const crypto = require('crypto');
 
 const PORT = process.env.PORT || 3000;
 const TRUST_PROXY = process.env.TRUST_PROXY === '1';
+// Other speedtest servers the page may pick (lowest latency wins), e.g. https://speedtest-aws.4home.lat
+const PEERS = (process.env.PEERS || '').split(',').map(s => s.trim().replace(/\/$/, '')).filter(Boolean);
 const RESULTS = process.env.RESULTS_PATH || path.join(__dirname, 'results.jsonl');
 const INDEX = fs.readFileSync(path.join(__dirname, 'public/index.html'));
 const LOGO = fs.readFileSync(path.join(__dirname, 'public/logo.svg'));
@@ -73,6 +75,17 @@ const server = http.createServer(async (req, res) => {
   const ip = clientIp(req);
 
   try {
+    // Measurement endpoints are called cross-origin by the page on the main server.
+    if (['/__down', '/__up', '/healthz', '/api/ip'].includes(url.pathname)) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Timing-Allow-Origin', '*');
+      if (req.method === 'OPTIONS') { res.writeHead(204, { 'Access-Control-Allow-Methods': 'GET, POST', 'Access-Control-Max-Age': '86400' }); return res.end(); }
+    }
+
+    if (url.pathname === '/api/servers') {
+      return json(res, 200, { servers: ['', ...PEERS] });
+    }
+
     if (url.pathname === '/') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return res.end(INDEX);

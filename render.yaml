@@ -13,5 +13,7 @@ services:
         value: 20
       - key: TRUST_PROXY
         value: "1"
+      - key: PEERS
+        value: https://speedtest-aws.4home.lat
       - key: RESULTS_PATH
         value: /tmp/4home-speedtest/results.jsonl
